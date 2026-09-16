@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Client build files
+client/dist/
+client/build/
+client/.next/
+client/.nuxt/
+client/.vite/
+client/coverage/
+
+# Caches
+.cache/
+.parcel-cache/
+.turbo/
+.eslintcache
+
+# Logs and runtime files
+*.log
+logs/
+*.pid
+*.seed
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/

@@ -10,8 +10,10 @@ const checkDBConnection = async () => {
         throw error;
     }
 }
+const closeDatabase = () => sequelize.close();
 
 module.exports = {
     Users,
-    checkDBConnection
+    checkDBConnection,
+    closeDatabase
 };
