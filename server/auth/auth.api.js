@@ -1,7 +1,7 @@
 const router = require("express").Router();
 
 
-const { logIn } = require("./auth.controller");
+const { logIn, register } = require("./auth.controller");
 
 router.post("/login", async (request, response) => {
     const { userId, password } = request.body;
@@ -17,6 +17,23 @@ router.post("/login", async (request, response) => {
     return response.status(401).send({ 
         success: false, 
         message: "User credentials are invalid!"
+    });
+});
+
+router.post("/register", async (request, response) => {
+    const { userId, password } = request.body;
+    if (!userId || !password) {
+        return response.status(400).send({
+            success: false,
+            message: "UserId and password both should be provided"})
+    }
+    const userDetails = await register(userId, password);
+    if (userDetails) {
+        return response.status(200).send({ success: true, userDetails });
+    }
+    return response.status(500).send({ 
+        success: false, 
+        message: "Error occured while creating new user!"
     });
 });
 

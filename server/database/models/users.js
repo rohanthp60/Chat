@@ -7,6 +7,10 @@ const orm = (Datatypes, Model, sequelize) => {
                 primaryKey: true,
                 autoIncrement: true
             },
+            userId: {
+                type: Datatypes.STRING(100),
+                unique: true
+            },
             firstName: {
                 type: Datatypes.STRING(100)
             },
@@ -21,15 +25,6 @@ const orm = (Datatypes, Model, sequelize) => {
             },
             dateOfBirth: {
                 type: Datatypes.DATEONLY
-            },
-            joinedSince: {
-                type: Datatypes.DATEONLY
-            },
-            leftSince: {
-                type: Datatypes.DATEONLY
-            },
-            role: {
-                type: Datatypes.ENUM("admin", "student", "teacher")
             },
             passwordHash: {
                 type: Datatypes.STRING(100)

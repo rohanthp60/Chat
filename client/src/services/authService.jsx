@@ -3,7 +3,7 @@ import { useState } from "react";
 const apiBaseUrl = import.meta.env.VITE_BACKEND_BASE_URL;
 
 
-export function useLogIn() {
+export function useAuth(register=false) {
     const [requestPhase, setRequestPhase] = useState({
         goingOn: false,
         completed: false,
@@ -12,13 +12,14 @@ export function useLogIn() {
         token: null
     });
 
-    const login = async (userId, password) => {
+    const authenitcate = async (userId, password) => {
         setRequestPhase(prevState => ({...prevState, goingOn: true}));
         console.log(`${apiBaseUrl}/auth/login`);
         try {
-            const response = await axios.post(`${apiBaseUrl}/auth/login`, {
+            const response = await axios.post(`${apiBaseUrl}/auth/${register ? 'register' : 'login'}`, {
                 userId, password
             });
+            console.log(response);
             const data = response.data;
             setRequestPhase(prevState => ({
                 goingOn: false,
@@ -41,6 +42,6 @@ export function useLogIn() {
         }
     }
 
-    return {...requestPhase, login};
+    return {...requestPhase, authenitcate};
 }
 

@@ -1,17 +1,22 @@
 import { useState } from "react";
-import { useLogIn } from "../services/authService";
+import { useAuth } from "../services/authService";
 import { toast } from "react-toastify";
+import { Link } from "react-router";
+import { useNavigate } from "react-router";
+import styles from "./AuthForm.module.css";
 
-export const Login = ({ setLoggedIn }) => {
+
+export const Login = ({ setToken }) => {
     const [userId, setUserId] = useState("");
     const [password, setPassword] = useState("");
+    const navigate = useNavigate();
     const { 
-        login, 
-        goingOn, 
-        completed, 
-        success, 
-        token, 
-        message } = useLogIn();
+        authenitcate: login,
+        goingOn,
+        completed,
+        success,
+        token,
+        message } = useAuth();
 
 
     const onUserIdChange = e => {
@@ -29,28 +34,36 @@ export const Login = ({ setLoggedIn }) => {
         const result = await login(userId, password);
         if (result?.success) {
             toast.success("Logged In");
-            setLoggedIn(true);
+            setToken(result?.token);
+            navigate("/dashboard", { replace: true });
         } else {
             toast.error(`${message || "Some error occured."} Please try again.`);
         }
     }
 
     return (
+    <>
         <form onSubmit={performLogin}>
-            <h1>Login</h1>
-            <input 
-                name="userId" 
-                type="text"
-                value={userId}
-                onChange={onUserIdChange}
-            />
-            <input
-                name="password"
-                type="password"
-                value={password}
-                onChange={onPasswordChange}
-            />
-            <button type="submit" disabled={goingOn}>Login</button>
+            <div className={styles.fields}>
+                <h1>Login</h1>
+                <label htmlFor="userId">User ID</label>
+                <input
+                    name="userId"
+                    type="text"
+                    value={userId}
+                    onChange={onUserIdChange}
+                />
+                <label htmlFor="password">Password</label>
+                <input
+                    name="password"
+                    type="password"
+                    value={password}
+                    onChange={onPasswordChange}
+                />
+                <button type="submit" disabled={goingOn}>Login</button>
+            </div>
         </form>
+        <Link className={styles.link} to="../register" replace>New Here? Register</Link>
+    </>
     );
 }
