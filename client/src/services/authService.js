@@ -3,7 +3,7 @@ import { useState } from "react";
 const apiBaseUrl = import.meta.env.VITE_BACKEND_BASE_URL;
 
 
-export function useAuth(register=false) {
+export function useAuthenticate(register=false) {
     const [requestPhase, setRequestPhase] = useState({
         goingOn: false,
         completed: false,

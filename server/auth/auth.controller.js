@@ -2,8 +2,8 @@ const { Users } = require("../database");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const saltRounds = 10;
-const jwtSignKey = "secure";
+const saltRounds = process.env.SALT_ROUNDS;
+const jwtSignKey = process.env.JWT_SIGN_KEY;
 
 async function logIn(userId, password) {
     let userResolved = false;
@@ -44,4 +44,3 @@ async function register(userId, password) {
 }
 
 module.exports = { logIn, register };
-

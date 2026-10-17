@@ -5,23 +5,24 @@ import "react-toastify/dist/ReactToastify.css";
 
 import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
+import { useAuth } from './contexts/AuthContext';
 
 
-function RequireAuth ({ loggedIn }) {
-    if (!loggedIn) {
+function RequireAuth () {
+    const { token } = useAuth();
+    if (!token) {
         return <Navigate to="/auth" replace/>;
     }
     return <Outlet />;
 }
 
 function App() {
-    const [token, setToken] = useState("");
     return (
     <>
         <BrowserRouter>
         <Routes>
-            <Route path="/auth/*" element={<AuthPage setToken={setToken} />} />
-            <Route element={<RequireAuth loggedIn={!!token} />}>
+            <Route path="/auth/*" element={<AuthPage />} />
+            <Route element={<RequireAuth />}>
                 <Route path="/dashboard/*" element={<Dashboard />} />
             </Route>
             <Route path="*" element={<Navigate to="/auth" />} />

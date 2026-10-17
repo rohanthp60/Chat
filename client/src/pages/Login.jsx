@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { useAuth } from "../services/authService";
+import { useAuth } from "../contexts/AuthContext";
 import { toast } from "react-toastify";
 import { Link } from "react-router";
 import { useNavigate } from "react-router";
 import styles from "./AuthForm.module.css";
+import { useAuthenticate } from "../services/authService";
 
 
-export const Login = ({ setToken }) => {
+export const Login = () => {
+    const { setToken } = useAuth();
     const [userId, setUserId] = useState("");
     const [password, setPassword] = useState("");
     const navigate = useNavigate();
@@ -16,7 +18,7 @@ export const Login = ({ setToken }) => {
         completed,
         success,
         token,
-        message } = useAuth();
+        message } = useAuthenticate();
 
 
     const onUserIdChange = e => {

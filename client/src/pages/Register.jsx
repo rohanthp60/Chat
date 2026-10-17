@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useAuth } from "../services/authService";
+import { useAuthenticate } from "../services/authService";
 import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router";
 import styles from "./AuthForm.module.css";
@@ -15,7 +15,7 @@ export const Register = () => {
         goingOn,
         success,
         authenitcate
-    } = useAuth(true);
+    } = useAuthenticate(true);
 
     const performRegister = async (e) => {
         e.preventDefault();
