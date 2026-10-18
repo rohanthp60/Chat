@@ -1,5 +1,4 @@
 const jwt = require("jsonwebtoken");
-const saltRounds = process.env.SALT_ROUNDS || 10;
 const jwtSignKey = process.env.JWT_SIGN_KEY || "default_secret_key";
 
 async function checkAuth(req, res, next) {
@@ -15,8 +14,10 @@ async function checkAuth(req, res, next) {
 
     try {
         const decoded = jwt.verify(token, jwtSignKey);
+        req.userId = decoded?.userId;
         next(); // Proceed to the next middleware or route handler
     } catch (error) {
+        console.log(error);
         return res.status(403).send({ success: false, message: "Invalid or expired token" });
     }
 }

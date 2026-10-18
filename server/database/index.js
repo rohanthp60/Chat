@@ -7,6 +7,23 @@ const sequelize = require('./init');
 const Users = UsersObject(DataTypes, Model, sequelize);
 const Chats = ChatsObject(DataTypes, Model, sequelize);
 const ChatUserRelation = ChatUserRelationObject(DataTypes, Model, sequelize);
+
+Users.belongsToMany(Chats, {
+    through: ChatUserRelation,
+    foreignKey: "userId",
+    otherKey: "chatId",
+    sourceKey: "userId",
+    targetKey: "chatId"
+});
+
+Chats.belongsToMany(Users, {
+    through: ChatUserRelation,
+    foreignKey: "chatId",
+    otherKey: "userId",
+    sourceKey: "chatId",
+    targetKey: "userId"
+});
+
 const checkDBConnection = async () => {
     try {
         await sequelize.authenticate();

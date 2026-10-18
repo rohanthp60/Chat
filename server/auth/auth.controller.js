@@ -2,7 +2,7 @@ const { Users } = require("../database");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const saltRounds = process.env.SALT_ROUNDS;
+const saltRounds = Number.parseInt(process.env.SALT_ROUNDS, 10) || 10;
 const jwtSignKey = process.env.JWT_SIGN_KEY;
 
 async function logIn(userId, password) {

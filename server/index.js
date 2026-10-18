@@ -26,6 +26,7 @@ app.use(express.json());
 app.use('/auth', auth);
 app.use(checkAuth);
 
+
 app.use('/api', routes);
 
 async function start() {
