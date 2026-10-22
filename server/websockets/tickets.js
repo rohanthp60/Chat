@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 
-let tickets = new Map();
-let ticketExpiryTime = 1800000 // 30 seconds
+const tickets = new Map();
+const ticketExpiryTime = 1800000; // 30 minutes
 
 function getTicket(userId) {
     const ticketString = crypto.randomBytes(16).toString("hex");
@@ -22,7 +22,7 @@ function validateTicket(ticketString) {
     const currentTime = Date.now();
     if (currentTime - ticket.createdAt > ticketExpiryTime) {
         tickets.delete(ticketString);
-        return null;
+        return false;
     }
     tickets.delete(ticketString);
     return ticket.userId;

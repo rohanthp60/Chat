@@ -2,7 +2,7 @@ import axios from "axios";
 
 const apiBaseUrl = import.meta.env.VITE_BACKEND_BASE_URL;
 
-async function getContacts(token) {
+export const getContacts = async (token) => {
     try {
         const response = await axios.get(`${apiBaseUrl}/api/contacts`, {
             headers: {
@@ -15,5 +15,3 @@ async function getContacts(token) {
         throw error;
     }
 }
-
-export default getContacts;

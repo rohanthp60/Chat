@@ -1,0 +1,25 @@
+.page {
+    min-height: 100vh;
+    box-sizing: border-box;
+    padding: 2rem 1rem 4rem;
+    background: #f4f6f8;
+    color: #1f2937;
+    font-family: Arial, sans-serif;
+}
+
+.content {
+    width: min(100%, 56rem);
+    margin: 0 auto;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.header h1 {
+    margin: 0;
+}

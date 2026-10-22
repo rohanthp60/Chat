@@ -25,9 +25,10 @@ app.use(express.json());
 
 app.use('/auth', auth);
 app.use(checkAuth);
-
-
 app.use('/api', routes);
+app.use('/', (req, res) => {
+    res.send({ message: "Welcome to the API" });
+});
 
 async function start() {
     try {

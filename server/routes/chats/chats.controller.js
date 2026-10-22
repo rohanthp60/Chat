@@ -22,6 +22,19 @@ async function getChats(userId) {
     }
 }
 
+async function getChatById(chatId) {
+    try {
+        const chat = await Chats.findOne({ where: { chatId } });
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+        return chat;
+    } catch (error) {
+        console.error("Error fetching chat by ID:", error);
+        throw error;
+    }
+}
+
 async function createChat(participants) {
     try {
         const response = await Users.findAll({
@@ -50,6 +63,14 @@ async function createChat(participants) {
                 userId
             }))
         );
+        multicastToUsers(participants, {
+            messageType: 'chatCreated',
+            messageId: nanoid(8),
+            data: {
+                chatId,
+                participants
+            }
+        });
         return chatId;
     } catch (error) {
         console.error("Error creating chat:", error);
@@ -64,13 +85,29 @@ async function updateChat(chatId, message, senderId) {
             throw new Error("Chat not found");
         }
 
-        const updatedConversation = [...chat.conversation, { senderId, message, timestamp: new Date() }];
+        const senderRelation = await ChatUserRelation.findOne({
+            where: { chatId, userId: senderId }
+        });
+        if (!senderRelation) {
+            throw new Error("User is not a member of this chat");
+        }
+
+        const lastMessage = {
+            id: nanoid(8),
+            senderId,
+            message,
+            timestamp: new Date().toISOString()
+        };
+        const updatedConversation = [
+            ...(chat.conversation || []),
+            lastMessage
+        ];
         await chat.update({ conversation: updatedConversation });
-        const lastMessage = updatedConversation[updatedConversation.length - 1];
 
         const participants = await ChatUserRelation.findAll({ where: { chatId }, attributes: ['userId'] });
         multicastToUsers(participants.map(p => p.userId), {
             messageType: 'chatUpdate',
+            messageId: nanoid(8),
             data: {
                 chatId,
                 lastMessage
@@ -86,5 +123,6 @@ async function updateChat(chatId, message, senderId) {
 module.exports = {
     getChats,
     createChat,
+    getChatById,
     updateChat
 };

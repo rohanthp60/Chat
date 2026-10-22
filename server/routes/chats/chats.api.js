@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { getChats, createChat } = require('./chats.controller');
+const { getChats, createChat, getChatById } = require('./chats.controller');
 
 router.get('/', async (req, res) => {
     const userId = req?.userId;
@@ -12,6 +12,21 @@ router.get('/', async (req, res) => {
         return res.status(200).send({ success: true, chats });
     } catch (error) {
         console.error("Error fetching chats:", error);
+        return res.status(500).send({ success: false, message: "Internal server error" });
+    }
+});
+
+router.get('/:chatId', async (req, res) => {
+    const { chatId } = req.params;
+    if (!chatId) {
+        return res.status(400).send({ success: false, message: "Chat ID is required" });
+    }
+
+    try {
+        const chat = await getChatById(chatId);
+        return res.status(200).send({ success: true, chat });
+    } catch (error) {
+        console.error("Error fetching chat by ID:", error);
         return res.status(500).send({ success: false, message: "Internal server error" });
     }
 });

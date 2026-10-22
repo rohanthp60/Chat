@@ -45,3 +45,18 @@ export function useAuthenticate(register=false) {
     return {...requestPhase, authenitcate};
 }
 
+export const validToken = async (token) => {
+    if (!token) return false;
+    try {
+        const response = await axios.get(`${apiBaseUrl}/api/chats/`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        return response.status === 200;
+    } catch (error) {
+        console.error("Error validating token:", error);
+        return false;
+    }
+}
+

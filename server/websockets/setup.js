@@ -3,50 +3,79 @@ const { updateChat } = require("../routes/chats/chats.controller");
 const { addClient } = require("./controller");
 
 async function setupWebSocketServer(wss, server) {
-
-    server.on('upgrade', (req, soc, head) => {
+    server.on("upgrade", (request, socket, head) => {
         try {
-            const { searchParams } = new URL(req.url, 'http://localhost');
+            const requestUrl = new URL(request.url, "http://localhost");
+            if (requestUrl.pathname !== "/ws") {
+                socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+                socket.destroy();
+                return;
+            }
+
+            const { searchParams } = requestUrl;
             const token = searchParams.get('token');
             if (!token) {
-                soc.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-                soc.destroy();
+                rejectUpgrade(socket, 401, "Unauthorized");
                 return;
             }
 
             const userId = validateTicket(token);
             if (!userId) {
-                soc.write('HTTP/1.1 403 Forbidden\r\n\r\n');
-                soc.destroy();
+                rejectUpgrade(socket, 403, "Forbidden");
                 return;
             }
         
-            wss.handleUpgrade(req, soc, head, (ws) => {
-                ws.userId = userId; // Attach the userId to the WebSocket instance
-                wss.emit('connection', ws, req);
+            wss.handleUpgrade(request, socket, head, (ws) => {
+                ws.userId = userId;
+                wss.emit("connection", ws, request);
             });
         }
         catch (error) {
-            console.error('Error occurred while handling WebSocket upgrade:', error);
-            soc.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
-            soc.destroy();
+            console.error("Error occurred while handling WebSocket upgrade:", error);
+            rejectUpgrade(socket, 500, "Internal Server Error");
         }
-
     });
 
-    wss.on('connection', (ws, req) => {
-
-        console.log('WebSocket connection established. UserId:', ws.userId);
+    wss.on("connection", (ws) => {
+        console.log("WebSocket connection established. UserId:", ws.userId);
         addClient(ws.userId, ws);
-        ws.on('message', async (message) => {
-            const { messageType, data} = JSON.parse(message.toString());
-            if (messageType === 'chatMessage') {
-                const { chatId, message } = data;
-                const senderId = ws.userId;
-                await updateChat(chatId, message, senderId);
+
+        ws.on("message", async (rawMessage) => {
+            try {
+                const payload = JSON.parse(rawMessage.toString());
+                if (payload?.messageType !== "chatMessage") {
+                    sendError(ws, "Unsupported message type");
+                    return;
+                }
+
+                const chatId = payload.data?.chatId;
+                const message = payload.data?.message;
+                if (typeof chatId !== "string" || typeof message !== "string" || !message.trim()) {
+                    sendError(ws, "chatId and message are required");
+                    return;
+                }
+
+                await updateChat(chatId, message.trim(), ws.userId);
+            } catch (error) {
+                console.error("Error processing WebSocket message:", error);
+                sendError(ws, "Unable to process chat message");
             }
         });
     });
+}
+
+function rejectUpgrade(socket, statusCode, statusText) {
+    socket.write(`HTTP/1.1 ${statusCode} ${statusText}\r\n\r\n`);
+    socket.destroy();
+}
+
+function sendError(ws, message) {
+    if (ws.readyState === 1) {
+        ws.send(JSON.stringify({
+            messageType: "error",
+            data: { message }
+        }));
+    }
 }
 
 module.exports = setupWebSocketServer;

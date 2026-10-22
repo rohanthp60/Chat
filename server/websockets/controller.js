@@ -21,7 +21,7 @@ function sendToUser(userId, message) {
     const sockets = clientsByUserId.get(userId);
     if (sockets) {
         for (const socket of sockets) {
-            if (socket.readyState === socket.OPEN) {
+            if (socket.readyState === 1) {
                 socket.send(JSON.stringify(message));
             }
         }

@@ -1,11 +1,9 @@
-import { Login } from './Login';
-import { Register } from './Register';
-import styles from './AuthForm.module.css';
+import { Navigate, Route, Routes } from "react-router";
+import Login from "./Login";
+import Register from "./Register";
+import styles from "./AuthForm.module.css";
 
-import { Route, Routes, Navigate } from 'react-router';
-
-export const AuthPage = () => {
-    return (
+export const AuthPage = () => (
     <main className={styles.page}>
         <section className={styles.card}>
             <Routes>
@@ -15,5 +13,4 @@ export const AuthPage = () => {
             </Routes>
         </section>
     </main>
-    );
-}
+);
