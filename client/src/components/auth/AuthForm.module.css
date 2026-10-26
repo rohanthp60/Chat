@@ -14,7 +14,7 @@
 }
 
 .card {
-    width: min(100%, 28rem);
+    width: min(100%, 45rem);
     padding: 2rem;
     border: 1px solid #dfe3e8;
     border-radius: 0.5rem;
@@ -41,6 +41,36 @@
     border: 1px solid #b8c0c8;
     border-radius: 0.25rem;
     font: inherit;
+}
+
+.fields input.nameField {
+    width: 30%;
+}
+
+.genderSelect {
+    box-sizing: border-box;
+    width: 45%;
+    min-height: 3rem;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid #b8c0c8;
+    border-radius: 0.25rem;
+    font: inherit;
+}
+
+.fields input.errorField,
+.fields select.errorField {
+    border: 2px solid #dc2626;
+}
+
+.fields input.errorField:focus,
+.fields select.errorField:focus {
+    outline: 2px solid rgb(220 38 38 / 25%);
+    outline-offset: 1px;
+}
+
+.errorMessage {
+    color: #dc2626;
+    font-size: 0.875rem;
 }
 
 .fields button {

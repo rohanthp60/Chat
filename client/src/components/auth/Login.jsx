@@ -14,7 +14,7 @@ const Login = () => {
 
     const performLogin = async event => {
         event.preventDefault();
-        const result = await login(userId, password);
+        const result = await login({userId, password});
         if (result?.success) {
             toast.success("Logged In");
             setToken(result.token);

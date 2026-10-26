@@ -12,13 +12,13 @@ export function useAuthenticate(register=false) {
         token: null
     });
 
-    const authenitcate = async (userId, password) => {
+    const authenitcate = async (userDetails) => {
         setRequestPhase(prevState => ({...prevState, goingOn: true}));
-        console.log(`${apiBaseUrl}/auth/login`);
         try {
-            const response = await axios.post(`${apiBaseUrl}/auth/${register ? 'register' : 'login'}`, {
-                userId, password
-            });
+            const filteredUserDetails = Object.fromEntries(
+                Object.entries(userDetails).filter(([, value]) => value !== "")
+            );
+            const response = await axios.post(`${apiBaseUrl}/auth/${register ? 'register' : 'login'}`, filteredUserDetails);
             console.log(response);
             const data = response.data;
             setRequestPhase(prevState => ({
@@ -59,4 +59,3 @@ export const validToken = async (token) => {
         return false;
     }
 }
-

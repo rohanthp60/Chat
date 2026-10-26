@@ -21,13 +21,14 @@ router.post("/login", async (request, response) => {
 });
 
 router.post("/register", async (request, response) => {
-    const { userId, password } = request.body;
-    if (!userId || !password) {
+    const { userId, password, firstName, middleName, lastName, gender, dateOfBirth } = request.body;
+    if (!userId || !password || !firstName || !lastName || !gender || !dateOfBirth) {
         return response.status(400).send({
             success: false,
-            message: "UserId and password both should be provided"})
+            message: "All fields should be provided."
+        });
     }
-    const userDetails = await register(userId, password);
+    const userDetails = await register({ userId, password, firstName, middleName, lastName, gender, dateOfBirth });
     if (userDetails) {
         return response.status(200).send({ success: true, userDetails });
     }
