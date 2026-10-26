@@ -30,14 +30,15 @@ async function logIn(userId, password) {
     return token;
 }
 
-async function register(userId, password) {
+async function register(userDetails) {
+    const { password } = userDetails;
     const passwordHash = await bcrypt.hash(password, saltRounds);
     try {
-        const response = await Users.create({
-            userId,
-            passwordHash
+        const newUser = await Users.create({
+            ...userDetails,
+            passwordHash: passwordHash
         });
-        return response.dataValues;
+        return newUser;
     } catch (error) {
         console.error("Error creating user:", error);
     }
