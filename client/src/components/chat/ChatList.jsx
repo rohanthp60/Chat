@@ -14,7 +14,6 @@ const ChatList = () => {
         const fetchChats = async () => {
             try {
                 const chatResponse = await getChats(token);
-                console.log("Fetched chats:", chatResponse);
                 setChats(chatResponse.chats || []);
             } catch (error) {
                 console.error("Error fetching chats:", error);

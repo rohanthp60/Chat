@@ -25,7 +25,6 @@ export const createChat = async (token, participants) => {
 export const getChats = async token => {
     try {
         const response = await axios.get(`${apiBaseUrl}/api/chats/`, authHeaders(token));
-        console.log("Chats fetched:", response.data);
         return response.data;
     } catch (error) {
         console.error("Error fetching chats:", error);
@@ -38,7 +37,6 @@ export const getChatById = async (token, chatId) => {
             `${apiBaseUrl}/api/chats/${chatId}`,
             authHeaders(token)
         );
-        console.log("Chat fetched:", response.data);
         return response.data;
     } catch (error) {
         console.error("Error fetching chat by ID:", error);
