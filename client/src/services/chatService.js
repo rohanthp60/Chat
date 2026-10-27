@@ -8,11 +8,11 @@ const authHeaders = token => ({
     }
 });
 
-export const createChat = async (token, participants) => {
+export const createChat = async (token, chatDetails) => {
     try {
         const response = await axios.post(
             `${apiBaseUrl}/api/chats/`,
-            { participants },
+            chatDetails,
             authHeaders(token)
         );
         console.log("Chat created:", response);

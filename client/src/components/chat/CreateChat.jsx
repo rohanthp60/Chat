@@ -1,21 +1,19 @@
-import { useState } from "react";
-import ChatCreationForm from "./ChatCreationForm";
 import styles from "./Chat.module.css";
 
-const CreateChat = () => {
-    const [creating, setCreating] = useState(false);
-
-    if (creating) {
-        return <ChatCreationForm setCreating={setCreating} />;
-    }
-
+const CreateGroupChatButton = ({ setCreating }) => {
     return (
-        <div>
-            <button className={styles.button} onClick={() => setCreating(true)}>
+        <button className={styles.chatCreationButton} onClick={() => setCreating(true)}>
                 Create New Chat
-            </button>
-        </div>
+        </button>
     );
 };
 
-export default CreateChat;
+const NewDMButton = ({ setCreating }) => {
+    return (
+        <button className={styles.chatCreationButton} onClick={() => setCreating(true)}>
+                Create New DM
+        </button>
+    );
+};
+
+export { CreateGroupChatButton, NewDMButton };

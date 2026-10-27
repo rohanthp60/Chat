@@ -24,7 +24,7 @@ async function logIn(userId, password) {
 
 
     if (userResolved) {
-        token = jwt.sign(dbResponse.dataValues, jwtSignKey, {expiresIn: '30s'});
+        token = jwt.sign(dbResponse.dataValues, jwtSignKey, {expiresIn: '3h'});
     }
 
     return token;

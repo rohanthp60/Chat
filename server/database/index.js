@@ -24,6 +24,18 @@ Chats.belongsToMany(Users, {
     targetKey: "userId"
 });
 
+ChatUserRelation.belongsTo(Users, {
+    foreignKey: "userId",
+    targetKey: "userId",
+    as: "user"
+});
+
+ChatUserRelation.belongsTo(Chats, {
+    foreignKey: "chatId",
+    targetKey: "chatId",
+    as: "chat"
+});
+
 const checkDBConnection = async () => {
     try {
         await sequelize.authenticate();

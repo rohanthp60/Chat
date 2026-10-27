@@ -18,6 +18,9 @@ const orm = (Datatypes, Model, sequelize) => {
             groupChat: {
                 type: Datatypes.BOOLEAN,
                 defaultValue: false
+            },
+            name: {
+                type: Datatypes.STRING(100),
             }
         },
         {

@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import { useApp } from "../../contexts/appContext";
 import { getChats } from "../../services/chatService";
 import Chat from "./Chat";
+import ChatListItem from "./ChatListItem";
 import styles from "./Chat.module.css";
 
 const ChatList = () => {
@@ -21,6 +22,7 @@ const ChatList = () => {
         };
         fetchChats();
     }, [token]);
+    console.log({ chats });
 
     useEffect(() => subscribe(message => {
         if (message.messageType === "error") {
@@ -34,7 +36,7 @@ const ChatList = () => {
             setChats(previous => (
                 previous.some(chat => chat.chatId === chatId)
                     ? previous
-                    : [...previous, { chatId, conversation: [] }]
+                    : [...previous, { chatId, name: message.data?.name, conversation: [] }]
             ));
         }
     }), [subscribe]);
@@ -45,17 +47,12 @@ const ChatList = () => {
                 <h3 className={styles.sidebarTitle}>Chats</h3>
                 <ul className={styles.chatList}>
                     {chats.map(chat => (
-                        <li key={chat.chatId}>
-                            <button
-                                type="button"
-                                onClick={() => setSelectedChatId(chat.chatId)}
-                                className={`${styles.chatItem} ${
-                                    selectedChatId === chat.chatId ? styles.chatItemActive : ""
-                                }`}
-                            >
-                                Chat ID: {chat.chatId}
-                            </button>
-                        </li>
+                        <ChatListItem
+                            key={chat.chatId}
+                            chat={chat}
+                            isSelected={selectedChatId === chat.chatId}
+                            onSelect={setSelectedChatId}
+                        />
                     ))}
                 </ul>
             </aside>
