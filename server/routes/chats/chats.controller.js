@@ -9,13 +9,54 @@ async function getChats(userId) {
             include: [{
                 model: Users,
                 where: { userId },
+                attributes: ['userId', 'firstName', 'middleName', 'lastName'],
             }],
-            attributes: ['chatId', 'conversation'],
+            attributes: ['chatId', 'conversation', 'name', 'groupChat'],
          });
-        return chats.map(chat => ({
-            chatId: chat.chatId,
-            conversation: chat.conversation,
-        }));
+
+        const groupChats = chats.filter(chat => chat.groupChat);
+        const directChats = chats.filter(chat => !chat.groupChat);
+
+        const directChatIds = directChats.map(chat => chat.chatId);
+        const directChatParticipants = await ChatUserRelation.findAll({
+            where: {
+                chatId: {
+                    [Op.in]: directChatIds
+                },
+                userId: {
+                    [Op.ne]: userId
+                }
+            },
+            include: [{
+                model: Users,
+                as: 'user',
+                attributes: ['userId', 'firstName', 'middleName', 'lastName']
+            }],
+            attributes: ['chatId', 'userId']
+        });
+        const directChatMap = directChatParticipants.reduce((acc, relation) => {
+            const participant = relation.user;
+            const name = participant
+                ? [participant.firstName, participant.middleName, participant.lastName]
+                    .filter(Boolean)
+                    .join(" ")
+                : relation.userId;
+            acc[relation.chatId] = name || relation.userId;
+            return acc;
+        }, {});
+
+        return [
+            ...groupChats.map(chat => ({
+                chatId: chat.chatId,
+                name: chat.name || chat.chatId,
+                conversation: chat.conversation || []
+            })),
+            ...directChats.map(chat => ({
+                chatId: chat.chatId,
+                name: directChatMap[chat.chatId] || chat.chatId,
+                conversation: chat.conversation || []
+            }))
+        ];
     } catch (error) {
         console.error("Error fetching chat:", error);
         throw error;
@@ -35,7 +76,8 @@ async function getChatById(chatId) {
     }
 }
 
-async function createChat(participants) {
+async function createChat(chatDetails) {
+    const { participants, name, groupChat } = chatDetails;
     try {
         const response = await Users.findAll({
             where: {
@@ -52,10 +94,11 @@ async function createChat(participants) {
         }
 
         const chatId = nanoid(8);
-        const newChat = await Chats.create({
+        await Chats.create({
             chatId,
             conversation: [],
-            groupChat: participants.length > 2
+            name,
+            groupChat
         });
         await ChatUserRelation.bulkCreate(
             participants.map((userId) => ({
@@ -68,6 +111,7 @@ async function createChat(participants) {
             messageId: nanoid(8),
             data: {
                 chatId,
+                name,
                 participants
             }
         });

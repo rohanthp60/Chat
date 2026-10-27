@@ -32,13 +32,19 @@ router.get('/:chatId', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-    const { participants } = req.body;
-    if (!participants || !Array.isArray(participants) || participants.length <= 1) {
+    let { participants } = req.body;
+    participants = new Set(participants); // Remove duplicates
+    participants = Array.from(participants);
+
+    if (!participants.includes(req.userId)) {
+        participants.push(req.userId);
+    }
+    if (participants.length <= 1) {
         return res.status(400).send({ success: false, message: "Participants are required" });
     }
     
     try {
-        const chatId = await createChat(participants);
+        const chatId = await createChat({ ...req.body, participants });
         return res.status(201).send({ success: true, chatId });
     } catch (error) {
         console.error("Error creating chat:", error);
