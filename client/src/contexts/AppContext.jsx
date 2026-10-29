@@ -1,11 +1,20 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { useConnectSocket } from "../services/websocket";
 import { AppContext } from "./appContext";
+import getUserInfo from "../services/userInfoService";
 
 export const AppProvider = ({ children }) => {
     const [token, setToken] = useState(localStorage.getItem("token") || null);
     const { subscribe, sendMessage, connectionState } = useConnectSocket(token);
+    const [userDetail, setUserDetail] = useState(null);
 
+    useEffect(() => {
+        if (token) {
+            getUserInfo(token).then(res => {
+                setUserDetail(res);
+            });
+        }
+    }, [token]);
     const updateToken = useCallback(nextToken => {
         setToken(nextToken);
         if (nextToken) {
@@ -16,8 +25,8 @@ export const AppProvider = ({ children }) => {
     }, []);
 
     const value = useMemo(
-        () => ({ token, setToken: updateToken, subscribe, sendMessage, connectionState }),
-        [token, updateToken, subscribe, sendMessage, connectionState]
+        () => ({ token, setToken: updateToken, userDetail, subscribe, sendMessage, connectionState }),
+        [token, updateToken, userDetail, subscribe, sendMessage, connectionState]
     );
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

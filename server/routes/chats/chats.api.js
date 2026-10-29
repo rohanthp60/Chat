@@ -1,5 +1,11 @@
 const router = require('express').Router();
-const { getChats, createChat, getChatById } = require('./chats.controller');
+const { getChats, 
+        createChat, 
+        getChatById, 
+        addParticipants, 
+        removeParticipants,
+        setAdmin
+     } = require('./chats.controller');
 
 router.get('/', async (req, res) => {
     const userId = req?.userId;
@@ -33,6 +39,7 @@ router.get('/:chatId', async (req, res) => {
 
 router.post('/', async (req, res) => {
     let { participants } = req.body;
+    const userId = req?.userId;
     participants = new Set(participants); // Remove duplicates
     participants = Array.from(participants);
 
@@ -44,10 +51,63 @@ router.post('/', async (req, res) => {
     }
     
     try {
-        const chatId = await createChat({ ...req.body, participants });
+        const chatId = await createChat({ ...req.body, participants, admin: userId });
         return res.status(201).send({ success: true, chatId });
     } catch (error) {
         console.error("Error creating chat:", error);
+        return res.status(500).send({ success: false, message: "Internal server error" });
+    }
+});
+
+router.delete('/:chatId/participants', async (req, res) => {
+    const { chatId } = req.params;
+    const { userId } = req.body;
+    const { participants } = req.body;
+
+    if (!chatId || !userId) {
+        return res.status(400).send({ success: false, message: "Chat ID and User ID are required" });
+    }
+    
+    try {
+        await removeParticipants(chatId, userId, participants);
+        return res.status(200).send({ success: true, message: "Participants removed successfully" });
+    } catch (error) {
+        console.error("Error removing participants:", error);
+        return res.status(500).send({ success: false, message: "Internal server error" });
+    }
+});
+
+router.post('/:chatId/participants', async (req, res) => {
+    const { chatId } = req.params;
+    const { userId } = req.body;
+    const { participants } = req.body;
+
+    if (!chatId || !userId) {
+        return res.status(400).send({ success: false, message: "Chat ID and User ID are required" });
+    }
+    
+    try {
+        await addParticipants(chatId, userId, participants);
+        return res.status(200).send({ success: true, message: "Participants added successfully" });
+    } catch (error) {
+        console.error("Error adding participants:", error);
+        return res.status(500).send({ success: false, message: "Internal server error" });
+    }
+});
+
+router.post('/:chatId/admin', async (req, res) => {
+    const { chatId } = req.params;
+    const { newAdminId } = req.body;
+
+    if (!chatId || !newAdminId) {
+        return res.status(400).send({ success: false, message: "Chat ID and new admin ID are required" });
+    }
+
+    try {
+        await setAdmin(chatId, newAdminId, req.userId);
+        return res.status(200).send({ success: true, message: "Admin updated successfully" });
+    } catch (error) {
+        console.error("Error setting new admin:", error);
         return res.status(500).send({ success: false, message: "Internal server error" });
     }
 });

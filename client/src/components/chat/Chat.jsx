@@ -17,10 +17,32 @@ const mergeMessages = (existing, incoming) => {
         .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 };
 
+const MenuOptions = ({options}) => {
+    return (
+        <div className={styles.menuContainer}>
+            <ul className={styles.menu}>
+                {options.map((option, index) => (
+                    <li key={index}>
+                        <button
+                            type="button"
+                            onClick={option.onClick}
+                            className={styles.menuItem}
+                        >
+                            {option.label}
+                        </button>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    )
+}
+
 const Chat = ({ chatId }) => {
     const [text, setText] = useState("");
-    const { token, subscribe, sendMessage, connectionState } = useApp();
+    const { token, subscribe, sendMessage, connectionState, userDetail } = useApp();
     const [messages, setMessages] = useState([]);
+    const [menuOptions, setMenuOptions] = useState([]);
+    const [menuOpen, setMenuOpen] = useState(false);
 
     useEffect(() => subscribe(message => {
         if (message.messageType === "error") {
@@ -45,6 +67,26 @@ const Chat = ({ chatId }) => {
                     setMessages(previous =>
                         mergeMessages(chatData.chat.conversation || [], previous)
                     );
+                    const isGroupChat = chatData.chat.groupChat || false;
+                    const isAdmin = chatData.chat.admin === userDetail?.userId;
+                    let options = [];
+                    if (isGroupChat) {
+                        options = [{
+                            label: "Leave Chat",
+                            onClick: () => alert("Leave chat functionality not implemented yet")
+                        }];
+                        if (isAdmin) {
+                            options.push({
+                                label: "Add Participants",
+                                onClick: () => alert("Add participants functionality not implemented yet")
+                            });
+                            options.push({
+                                label: "Remove Participants",
+                                onClick: () => alert("Remove participants functionality not implemented yet")
+                            }); 
+                        }
+                    }
+                    setMenuOptions(options);
                 } else {
                     console.error("Failed to fetch chat:", chatData);
                 }
@@ -72,6 +114,18 @@ const Chat = ({ chatId }) => {
 
     return (
         <div className={styles.panel}>
+            <div className={styles.menuWrapper}>
+                <button
+                    type="button"
+                    className={styles.menuButton}
+                    aria-expanded={menuOpen}
+                    aria-label="Chat options"
+                    onClick={() => setMenuOpen(!menuOpen)}
+                >
+                    ...
+                </button>
+                {menuOpen && <MenuOptions options={menuOptions} />}
+            </div>
             <div className={styles.messages}>
                 {messages.map(message => (
                 <div className={styles.message} key={getMessageKey(message)}>

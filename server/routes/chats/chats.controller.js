@@ -98,7 +98,8 @@ async function createChat(chatDetails) {
             chatId,
             conversation: [],
             name,
-            groupChat
+            groupChat,
+            admin: chatDetails.admin
         });
         await ChatUserRelation.bulkCreate(
             participants.map((userId) => ({
@@ -112,7 +113,8 @@ async function createChat(chatDetails) {
             data: {
                 chatId,
                 name,
-                participants
+                participants,
+                admin: chatDetails.admin,
             }
         });
         return chatId;
@@ -164,9 +166,151 @@ async function updateChat(chatId, message, senderId) {
     }
 }
 
+function removeDuplicates(array) {
+    return Array.from(new Set(array));
+}
+
+async function addParticipants(chatId, newParticipants, userId) {
+    try {
+        const chat  = await Chats.findOne({ where: { chatId } });
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
+        const isAdmin = chat.admin === userId;
+        if (!isAdmin) {
+            throw new Error("Only the admin can add participants");
+        }
+
+        newParticipants = removeDuplicates(newParticipants);
+
+        const existingParticipants = await Users.findAll({
+            include: [{
+                model: Chats,
+                where: { chatId },
+                attributes: []
+            }],
+            where: {
+                userId: {
+                    [Op.in]: newParticipants
+                }
+            },
+            attributes: ['userId']
+        });
+        const existingUserIds = existingParticipants.map(u => u.userId);
+        const participantsToAdd = newParticipants.filter(p => !existingUserIds.includes(p));
+        
+        if (!participantsToAdd.length) {
+            throw new Error("No new participants to add");
+        }
+
+        await ChatUserRelation.bulkCreate(
+            participantsToAdd.map((userId) => ({
+                chatId,
+                userId
+            }))
+        );
+
+        multicastToUsers(participantsToAdd, {
+            messageType: 'chatCreated',
+            messageId: nanoid(8),
+            data: {
+                chatId,
+                name: chat.name,
+                addedBy: userId
+            }
+        });
+
+    } catch (error) {
+        console.error("Error adding participants:", error);
+        throw error;
+    }
+}
+
+async function removeParticipants(chatId, participantsToRemove, userId) {
+    try {
+        const chat  = await Chats.findOne({ where: { chatId } });
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
+        const isAdmin = chat.admin === userId;
+        const leavingSelf = participantsToRemove.length === 1 && participantsToRemove[0] === userId;
+        if (!isAdmin && !leavingSelf) {
+            throw new Error("Only the admin can remove participants or a user can leave the chat themselves");
+        }
+        if (!isAdmin) {
+            throw new Error("Only the admin can remove participants");
+        }
+
+        participantsToRemove = removeDuplicates(participantsToRemove);
+
+        await ChatUserRelation.destroy({
+            where: {
+                chatId,
+                userId: {
+                    [Op.in]: participantsToRemove
+                }
+            }
+        });
+
+        multicastToUsers(participantsToRemove, {
+            messageType: 'chatRemoved',
+            messageId: nanoid(8),
+            data: {
+                chatId,
+                removedBy: userId
+            }
+        });
+
+    } catch (error) {
+        console.error("Error removing participants:", error);
+        throw error;
+    }
+}
+
+async function setAdmin(chatId, newAdminId, currentAdminId) {
+    try {
+        const chat  = await Chats.findOne({ where: { chatId } });
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
+        if (chat.admin !== currentAdminId) {
+            throw new Error("Only the current admin can set a new admin");
+        }
+
+        const isParticipant = await ChatUserRelation.findOne({
+            where: { chatId, userId: newAdminId }
+        });
+        if (!isParticipant) {
+            throw new Error("New admin must be a participant of the chat");
+        }
+
+        await chat.update({ admin: newAdminId });
+
+        multicastToUsers([newAdminId], {
+            messageType: 'adminChanged',
+            messageId: nanoid(8),
+            data: {
+                chatId,
+                newAdminId,
+                changedBy: currentAdminId
+            }
+        });
+
+    } catch (error) {
+        console.error("Error setting new admin:", error);
+        throw error;
+    }
+}
+
 module.exports = {
     getChats,
     createChat,
     getChatById,
-    updateChat
+    updateChat,
+    removeParticipants,
+    addParticipants,
+    setAdmin,
 };

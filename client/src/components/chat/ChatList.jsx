@@ -15,30 +15,37 @@ const ChatList = () => {
         const fetchChats = async () => {
             try {
                 const chatResponse = await getChats(token);
-                setChats(chatResponse.chats || []);
+                setChats(chatResponse.chats.map(chat => ({chatId: chat.chatId, name: chat.name})) || []);
             } catch (error) {
                 console.error("Error fetching chats:", error);
             }
         };
         fetchChats();
     }, [token]);
-    console.log({ chats });
 
     useEffect(() => subscribe(message => {
         if (message.messageType === "error") {
             toast.error(message.data?.message || "WebSocket error");
             return;
         }
-        if (message.messageType !== "chatCreated") return;
-        console.log("Received chatCreated message:", message);
         const chatId = message.data?.chatId;
-        if (chatId) {
+        if (!chatId) return;
+
+        if (message.messageType === "chatCreated") {
             setChats(previous => (
                 previous.some(chat => chat.chatId === chatId)
                     ? previous
-                    : [...previous, { chatId, name: message.data?.name, conversation: [] }]
+                    : [...previous, { chatId, name: message.data?.name }]
             ));
+        } else if (message.messageType === "chatRemoved") {
+            setChats(previous => (
+                previous.filter(chat => chat.chatId !== chatId)
+            ));
+            if (selectedChatId === chatId) {
+                setSelectedChatId(null);
+            }
         }
+
     }), [subscribe]);
 
     return (
@@ -49,7 +56,8 @@ const ChatList = () => {
                     {chats.map(chat => (
                         <ChatListItem
                             key={chat.chatId}
-                            chat={chat}
+                            chatId={chat.chatId}
+                            name={chat.name}
                             isSelected={selectedChatId === chat.chatId}
                             onSelect={setSelectedChatId}
                         />
