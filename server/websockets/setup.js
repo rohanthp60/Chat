@@ -61,6 +61,14 @@ async function setupWebSocketServer(wss, server) {
                 sendError(ws, "Unable to process chat message");
             }
         });
+
+        ws.on("close", () => {
+            console.log("WebSocket connection closed. UserId:", ws.userId);
+        });
+
+        ws.on("error", (error) => {
+            console.error("WebSocket error for UserId:", ws.userId, "Error:", error);
+        });
     });
 }
 

@@ -5,7 +5,7 @@ import getUserInfo from "../services/userInfoService";
 
 export const AppProvider = ({ children }) => {
     const [token, setToken] = useState(localStorage.getItem("token") || null);
-    const { subscribe, sendMessage, connectionState } = useConnectSocket(token);
+    const { subscribe, sendMessage, connectionState, breakConnection } = useConnectSocket(token);
     const [userDetail, setUserDetail] = useState(null);
 
     useEffect(() => {
@@ -25,8 +25,8 @@ export const AppProvider = ({ children }) => {
     }, []);
 
     const value = useMemo(
-        () => ({ token, setToken: updateToken, userDetail, subscribe, sendMessage, connectionState }),
-        [token, updateToken, userDetail, subscribe, sendMessage, connectionState]
+        () => ({ token, setToken: updateToken, userDetail, subscribe, sendMessage, connectionState, breakConnection }),
+        [token, updateToken, userDetail, subscribe, sendMessage, connectionState, breakConnection]
     );
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

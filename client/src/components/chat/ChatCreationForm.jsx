@@ -20,7 +20,7 @@ const ContactItem = ({ item }) => {
 };
 
 const GroupChatCreationForm = ({ setCreatingChat }) => {
-    const { token } = useApp();
+    const { token, userDetail } = useApp();
     const [contacts, setContacts] = useState([]);
     const [chatName, setChatName] = useState("");
     const [selectedContacts, setSelectedContacts] = useState([]);
@@ -78,7 +78,7 @@ const GroupChatCreationForm = ({ setCreatingChat }) => {
             </div>
             <h3>Contacts</h3>
             <ItemSelector
-                items={contacts.map(contact => ({ ...contact, id: contact.userId }))}
+                items={contacts.filter(contact => contact.userId !== userDetail?.userId).map(contact => ({ ...contact, id: contact.userId }))}
                 selectedItems={selectedContacts}
                 setSelectedItems={setSelectedContacts}
                 ItemComponent={ContactItem}
@@ -100,7 +100,7 @@ const GroupChatCreationForm = ({ setCreatingChat }) => {
 };
 
 const NewDMForm = ({ setCreatingChat }) => {
-    const { token } = useApp();
+    const { token, userDetail } = useApp();
     const [contacts, setContacts] = useState([]);
     const [selectedContact, setSelectedContact] = useState(null);
     const [createInProgress, setCreateInProgress] = useState(false);
@@ -133,7 +133,6 @@ const NewDMForm = ({ setCreatingChat }) => {
         setCreateInProgress(true);
         try {
             const response = await createChat(token, {name: getContactFullName(selectedContact), participants: [selectedContact], groupChat: false});
-            console.log("Create chat response:", response);
             if (!response?.success) {
                 console.error("Failed to create chat:", response);
                 toast.error("Failed to create chat: " + response?.message);
@@ -154,7 +153,7 @@ const NewDMForm = ({ setCreatingChat }) => {
             <h2>Create Direct Message</h2>
             <h3>Contacts</h3>
             <ItemSelector
-                items={contacts.map(contact => ({ ...contact, id: contact.userId }))}
+                items={contacts.filter(contact => (contact.userId !== userDetail?.userId)).map(contact => ({ ...contact, id: contact.userId }))}
                 selectedItems={selectedContact ? [selectedContact] : []}
                 setSelectedItems={update => setSelectedContact(previous => {
                     const previousItems = previous ? [previous] : [];

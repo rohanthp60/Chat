@@ -1,7 +1,8 @@
 const { Chats, Users, ChatUserRelation } = require('../../database');
-const { multicastToUsers } = require('../../websockets/controller');
+const { multicastToUsers, sendToUser } = require('../../websockets/controller');
 const { nanoid } = require('nanoid');
 const { Op } = require('sequelize');
+const  _ = require('lodash');
 
 async function getChats(userId) {
     try {
@@ -11,63 +12,57 @@ async function getChats(userId) {
                 where: { userId },
                 attributes: ['userId', 'firstName', 'middleName', 'lastName'],
             }],
-            attributes: ['chatId', 'conversation', 'name', 'groupChat'],
+            attributes: ['chatId', 'admin', 'name', 'groupChat'],
          });
 
         const groupChats = chats.filter(chat => chat.groupChat);
         const directChats = chats.filter(chat => !chat.groupChat);
 
-        const directChatIds = directChats.map(chat => chat.chatId);
-        const directChatParticipants = await ChatUserRelation.findAll({
+        const directChatUserRelations = await ChatUserRelation.findAll({
             where: {
                 chatId: {
-                    [Op.in]: directChatIds
+                    [Op.in]: directChats.map(chat => chat.chatId),
                 },
-                userId: {
-                    [Op.ne]: userId
-                }
+                userId
             },
-            include: [{
-                model: Users,
-                as: 'user',
-                attributes: ['userId', 'firstName', 'middleName', 'lastName']
-            }],
-            attributes: ['chatId', 'userId']
+            attributes: ['chatId', 'name']
         });
-        const directChatMap = directChatParticipants.reduce((acc, relation) => {
-            const participant = relation.user;
-            const name = participant
-                ? [participant.firstName, participant.middleName, participant.lastName]
-                    .filter(Boolean)
-                    .join(" ")
-                : relation.userId;
-            acc[relation.chatId] = name || relation.userId;
-            return acc;
-        }, {});
+
+
+        const directChatName = _.fromPairs(
+            directChatUserRelations.map(relation => [relation.chatId, relation.name])
+        )
 
         return [
-            ...groupChats.map(chat => ({
-                chatId: chat.chatId,
-                name: chat.name || chat.chatId,
-                conversation: chat.conversation || []
-            })),
+            ...groupChats,
             ...directChats.map(chat => ({
-                chatId: chat.chatId,
-                name: directChatMap[chat.chatId] || chat.chatId,
-                conversation: chat.conversation || []
+                ...chat.toJSON(),
+                name: directChatName[chat.chatId] || "Unnamed chat"
             }))
-        ];
+        ]
+
     } catch (error) {
         console.error("Error fetching chat:", error);
         throw error;
     }
 }
 
-async function getChatById(chatId) {
+async function getChatById(chatId, userId) {
     try {
-        const chat = await Chats.findOne({ where: { chatId } });
+        let chat = await Chats.findOne({ where: { chatId } });
         if (!chat) {
             throw new Error("Chat not found");
+        }
+        chat = chat.dataValues;
+        if (!chat.groupChat) {
+            const userRelations = await ChatUserRelation.findOne({
+                where: { chatId, userId },
+                attributes: ['name']
+            });
+            if (!userRelations) {
+                throw new Error("User is not a member of this chat");
+            }
+            chat.name = userRelations.name;
         }
         return chat;
     } catch (error) {
@@ -76,18 +71,45 @@ async function getChatById(chatId) {
     }
 }
 
-async function createChat(chatDetails) {
-    const { participants, name, groupChat } = chatDetails;
+async function getParticipants(chatId) {
     try {
-        const response = await Users.findAll({
+        const participants = await Users.findAll({
+            include: [{
+                model: Chats,
+                where: { chatId },
+                attributes: []
+            }],
+            attributes: ['userId', 'firstName', 'middleName', 'lastName']
+        });
+        return participants.map(p => p.dataValues);
+    } catch (error) {
+        console.error("Error fetching chat participants:", error);
+        throw error;
+    }
+}
+
+
+async function createChat(chatDetails) {
+    let { participants, name, groupChat } = chatDetails;
+    try {
+        const usersResponse = await Users.findAll({
             where: {
                 userId: {
                     [Op.in]: participants
                 }
             },
-            attributes: ['userId']
+            attributes: ['userId', 'firstName', 'middleName', 'lastName']
         });
-        const userIds = response.map(u => u.userId);
+        const userIds = usersResponse.map(u => u.userId);
+
+        const getFullName = (firstName, middleName, lastName) => {
+            let fullName = firstName + " ";
+            if (middleName) {
+                fullName += middleName + " ";
+            }
+            fullName += lastName;
+            return fullName.trim();
+        }
 
         if (!userIds?.length || userIds.length !== participants.length) {
             throw new Error("Some participants do not exist");
@@ -101,22 +123,38 @@ async function createChat(chatDetails) {
             groupChat,
             admin: chatDetails.admin
         });
+
+        let chatUserRelationEntries = participants.map(userId => ({ chatId, userId }))
+        if (!groupChat) {
+            const otherUserIds = chatUserRelationEntries.map(entry => entry.userId)
+            for (let i = 0; i < 2; i++) {
+                const otherUserId = otherUserIds[1 - i];
+                const otherUser = usersResponse.find(u => u.userId === otherUserId);
+                const otherUserFullName = getFullName(otherUser.firstName, otherUser.middleName, otherUser.lastName);
+                chatUserRelationEntries[i].name = otherUserFullName;
+            }
+        }
         await ChatUserRelation.bulkCreate(
-            participants.map((userId) => ({
-                chatId,
-                userId
-            }))
+            chatUserRelationEntries
         );
-        multicastToUsers(participants, {
+
+        let websocketResponse = {
             messageType: 'chatCreated',
             messageId: nanoid(8),
             data: {
-                chatId,
-                name,
-                participants,
-                admin: chatDetails.admin,
+                chatId
             }
-        });
+        }
+        if (groupChat) {
+            websocketResponse.data.name = name;
+            websocketResponse.data.admin = chatDetails.admin;
+            multicastToUsers(participants, websocketResponse);
+        } else {
+            for (let i = 0; i < 2; i++) {
+                websocketResponse.data.name = chatUserRelationEntries[i].name;
+                sendToUser(chatUserRelationEntries[i].userId, websocketResponse);
+            }
+        }
         return chatId;
     } catch (error) {
         console.error("Error creating chat:", error);
@@ -195,7 +233,7 @@ async function addParticipants(chatId, newParticipants, userId) {
                     [Op.in]: newParticipants
                 }
             },
-            attributes: ['userId']
+            attributes: ['userId', 'firstName', 'middleName', 'lastName']
         });
         const existingUserIds = existingParticipants.map(u => u.userId);
         const participantsToAdd = newParticipants.filter(p => !existingUserIds.includes(p));
@@ -221,6 +259,25 @@ async function addParticipants(chatId, newParticipants, userId) {
             }
         });
 
+        const updatedParticipants = await Users.findAll({
+            include: [{
+                model: Chats,
+                where: { chatId },
+                attributes: []
+            }],
+            attributes: ['userId', 'firstName', 'middleName', 'lastName']
+        });
+        const updatedUserIds = updatedParticipants.map(p => p.userId);
+
+        multicastToUsers(updatedUserIds.map(x => x.userId), {
+            messageType: 'chatParticipantsUpdated',
+            messageId: nanoid(8),
+            data: {
+                chatId,
+                participants: updatedUserIds
+            }
+        });
+
     } catch (error) {
         console.error("Error adding participants:", error);
         throw error;
@@ -239,9 +296,7 @@ async function removeParticipants(chatId, participantsToRemove, userId) {
         if (!isAdmin && !leavingSelf) {
             throw new Error("Only the admin can remove participants or a user can leave the chat themselves");
         }
-        if (!isAdmin) {
-            throw new Error("Only the admin can remove participants");
-        }
+        
 
         participantsToRemove = removeDuplicates(participantsToRemove);
 
@@ -254,12 +309,37 @@ async function removeParticipants(chatId, participantsToRemove, userId) {
             }
         });
 
+        const existingParticipants = await ChatUserRelation.findAll({
+            where: { chatId },
+            attributes: ['userId']
+        });
+        const remainingUserIds = existingParticipants.map(p => p.userId);
+
         multicastToUsers(participantsToRemove, {
             messageType: 'chatRemoved',
             messageId: nanoid(8),
             data: {
                 chatId,
                 removedBy: userId
+            }
+        });
+
+        const updatedParticipants = await Users.findAll({
+            include: [{
+                model: Chats,
+                where: { chatId },
+                attributes: []
+            }],
+            attributes: ['userId', 'firstName', 'middleName', 'lastName']
+        });
+        const updatedUserIds = updatedParticipants.map(p => p.userId);
+
+        multicastToUsers(updatedUserIds, {
+            messageType: 'chatParticipantsUpdated',
+            messageId: nanoid(8),
+            data: {
+                chatId,
+                participants: updatedParticipants
             }
         });
 
@@ -313,4 +393,5 @@ module.exports = {
     removeParticipants,
     addParticipants,
     setAdmin,
+    getParticipants
 };

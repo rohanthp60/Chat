@@ -15,6 +15,12 @@ const orm = (Datatypes, Model, sequelize) => {
                     model: "Chats",
                     key: "chatId"
                 }
+            },
+            name: {
+                type: Datatypes.STRING(100)
+            },
+            readSince: {
+                type: Datatypes.DATE
             }
         },
         {

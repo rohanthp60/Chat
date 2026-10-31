@@ -1,7 +1,15 @@
 import styles from "./Chat.module.css";
 import { useState } from "react";
 
-const ItemSelector = ({ items, selectedItems, setSelectedItems, ItemComponent, checkDisabled = false, singleSelect = false }) => {
+const ItemSelector = ({ 
+    items, 
+    selectedItems,
+    setSelectedItems, 
+    ItemComponent, 
+    checkDisabled = false, 
+    singleSelect = false,
+    readOnly = false 
+}) => {
     const [searchText, setSearchText] = useState("");
     const normalizedSearchText = searchText.trim().toLowerCase();
     const filteredItems = items.filter(item => {
@@ -38,27 +46,30 @@ const ItemSelector = ({ items, selectedItems, setSelectedItems, ItemComponent, c
             return (
             <li className={styles.selectorItem} key={item.id}>
                 <label>
-                    <input
-                        className={styles.checkboxInput}
-                        type="checkbox"
-                        value={item.id}
-                        checked={isSelected}
-                        onChange={event => {
-                            setSelectedItems(previous => {
-                                if (event.target.checked) {
-                                    return singleSelect
-                                        ? [item.id]
-                                        : [...previous, item.id];
-                                }
+                    {
+                        !readOnly && <>
+                        <input
+                            className={styles.checkboxInput}
+                            type="checkbox"
+                            value={item.id}
+                            checked={isSelected}
+                            onChange={event => {
+                                setSelectedItems(previous => {
+                                    if (event.target.checked) {
+                                        return singleSelect
+                                            ? [item.id]
+                                            : [...previous, item.id];
+                                    }
 
-                                return previous.filter(id => id !== item.id);
-                            });
-                        }}
-                        disabled={checkDisabled}
-                    />
-                    <span className={styles.checkbox} aria-hidden="true">
-                        <span className={styles.checkboxMark}>✓</span>
-                    </span>
+                                    return previous.filter(id => id !== item.id);
+                                });
+                            }}
+                            disabled={checkDisabled}
+                        />
+                        <span className={styles.checkbox} aria-hidden="true">
+                            <span className={styles.checkboxMark}>✓</span>
+                        </span>
+                    </>}
                     <ItemComponent item={item} />
                 </label>
             </li>

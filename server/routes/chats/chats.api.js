@@ -4,7 +4,8 @@ const { getChats,
         getChatById, 
         addParticipants, 
         removeParticipants,
-        setAdmin
+        setAdmin,
+        getParticipants
      } = require('./chats.controller');
 
 router.get('/', async (req, res) => {
@@ -29,7 +30,7 @@ router.get('/:chatId', async (req, res) => {
     }
 
     try {
-        const chat = await getChatById(chatId);
+        const chat = await getChatById(chatId, req.userId);
         return res.status(200).send({ success: true, chat });
     } catch (error) {
         console.error("Error fetching chat by ID:", error);
@@ -42,7 +43,6 @@ router.post('/', async (req, res) => {
     const userId = req?.userId;
     participants = new Set(participants); // Remove duplicates
     participants = Array.from(participants);
-
     if (!participants.includes(req.userId)) {
         participants.push(req.userId);
     }
@@ -61,7 +61,7 @@ router.post('/', async (req, res) => {
 
 router.delete('/:chatId/participants', async (req, res) => {
     const { chatId } = req.params;
-    const { userId } = req.body;
+    const userId = req?.userId;
     const { participants } = req.body;
 
     if (!chatId || !userId) {
@@ -69,7 +69,7 @@ router.delete('/:chatId/participants', async (req, res) => {
     }
     
     try {
-        await removeParticipants(chatId, userId, participants);
+        await removeParticipants(chatId, participants, userId);
         return res.status(200).send({ success: true, message: "Participants removed successfully" });
     } catch (error) {
         console.error("Error removing participants:", error);
@@ -79,7 +79,7 @@ router.delete('/:chatId/participants', async (req, res) => {
 
 router.post('/:chatId/participants', async (req, res) => {
     const { chatId } = req.params;
-    const { userId } = req.body;
+    const userId = req?.userId;
     const { participants } = req.body;
 
     if (!chatId || !userId) {
@@ -87,7 +87,7 @@ router.post('/:chatId/participants', async (req, res) => {
     }
     
     try {
-        await addParticipants(chatId, userId, participants);
+        await addParticipants(chatId, participants, userId);
         return res.status(200).send({ success: true, message: "Participants added successfully" });
     } catch (error) {
         console.error("Error adding participants:", error);
@@ -112,4 +112,19 @@ router.post('/:chatId/admin', async (req, res) => {
     }
 });
 
+router.get('/:chatId/participants', async (req, res) => {
+    const { chatId } = req.params;
+
+    if (!chatId) {
+        return res.status(400).send({ success: false, message: "Chat ID is required" });
+    }
+
+    try {
+        const participants = await getParticipants(chatId);
+        return res.status(200).send({ success: true, participants });
+    } catch (error) {
+        console.error("Error fetching participants:", error);
+        return res.status(500).send({ success: false, message: "Internal server error" });
+    }
+});
 module.exports = router;

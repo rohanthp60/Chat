@@ -3,11 +3,12 @@ import { useNavigate } from "react-router";
 import styles from "../chat/Chat.module.css";
 
 const LogOutButton = () => {
-    const { setToken } = useApp();
+    const { setToken, breakConnection } = useApp();
     const navigate = useNavigate();
 
     const handleLogOut = () => {
         setToken(null);
+        breakConnection();
         navigate("/auth/login", { replace: true });
     };
 

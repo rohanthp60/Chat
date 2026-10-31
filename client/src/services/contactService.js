@@ -9,7 +9,7 @@ export const getContacts = async (token) => {
                 Authorization: `Bearer ${token}`
             }
         });
-        return response.data.contacts;
+        return response.data;
     } catch (error) {
         console.error("Error fetching contacts:", error);
         throw error;
