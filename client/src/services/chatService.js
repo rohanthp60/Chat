@@ -82,3 +82,29 @@ export const removeParticipantsFromChat = async (token, chatId, participants) =>
         console.error("Error removing participants from chat:", error);
     }
 }
+
+export const changeChatAdmin = async (token, chatId, newAdminId) => {
+    try {
+        const response = await axios.post(
+            `${apiBaseUrl}/api/chats/${chatId}/admin/${newAdminId}`,
+            {},
+            authHeaders(token)
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Error changing chat admin:", error);
+    }
+}
+
+export const renameChat = async (token, chatId, newName) => {
+    try {
+        const response = await axios.put(
+            `${apiBaseUrl}/api/chats/${chatId}/rename`,
+            { newName },
+            authHeaders(token)
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Error renaming chat:", error);
+    }
+}

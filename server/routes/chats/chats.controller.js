@@ -369,18 +369,64 @@ async function setAdmin(chatId, newAdminId, currentAdminId) {
 
         await chat.update({ admin: newAdminId });
 
-        multicastToUsers([newAdminId], {
+        const allParticipants = await Users.findAll({
+            include: [{
+                model: Chats,
+                where: { chatId },
+                attributes: []
+            }],
+            attributes: ['userId']
+        });
+
+        multicastToUsers(allParticipants.map(p => p.userId), {
             messageType: 'adminChanged',
             messageId: nanoid(8),
             data: {
                 chatId,
-                newAdminId,
+                admin: newAdminId,
                 changedBy: currentAdminId
             }
         });
 
     } catch (error) {
         console.error("Error setting new admin:", error);
+        throw error;
+    }
+}
+
+async function renameChat(chatId, newName, userId) {
+    try {
+        const chat = await Chats.findOne({ where: { chatId }});
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
+        if (chat.admin !== userId) {
+            throw new Error("Only the admin can rename the chat");
+        }
+
+        await chat.update({ name: newName });
+
+        const allParticipants = await Users.findAll({
+            include: [{
+                model: Chats,
+                where: { chatId },
+                attributes: []
+            }],
+            attributes: ['userId']
+        });
+
+        multicastToUsers(allParticipants.map(p => p.userId), {
+            messageType: 'chatRenamed',
+            messageId: nanoid(8),
+            data: {
+                chatId,
+                newName,
+                renamedBy: userId
+            }
+        });
+    } catch (error) {
+        console.error("Error renaming chat:", error);
         throw error;
     }
 }
@@ -393,5 +439,6 @@ module.exports = {
     removeParticipants,
     addParticipants,
     setAdmin,
+    renameChat,
     getParticipants
 };

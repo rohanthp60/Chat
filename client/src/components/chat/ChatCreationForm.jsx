@@ -30,7 +30,7 @@ const GroupChatCreationForm = ({ setCreatingChat }) => {
         const fetchContacts = async () => {
             try {
                 const fetchedContacts = await getContacts(token);
-                setContacts(fetchedContacts);
+                setContacts(fetchedContacts?.contacts || []);
             } catch (error) {
                 console.error("Error fetching contacts:", error);
                 toast.error("Error fetching contacts: " + error.message);
@@ -109,7 +109,7 @@ const NewDMForm = ({ setCreatingChat }) => {
         const fetchContacts = async () => {
             try {
                 const fetchedContacts = await getContacts(token);
-                setContacts(fetchedContacts);
+                setContacts(fetchedContacts?.contacts || []);
             } catch (error) {
                 console.error("Error fetching contacts:", error);
                 toast.error("Error fetching contacts: " + error.message);

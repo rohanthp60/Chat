@@ -5,7 +5,8 @@ const { getChats,
         addParticipants, 
         removeParticipants,
         setAdmin,
-        getParticipants
+        getParticipants,
+        renameChat
      } = require('./chats.controller');
 
 router.get('/', async (req, res) => {
@@ -95,9 +96,8 @@ router.post('/:chatId/participants', async (req, res) => {
     }
 });
 
-router.post('/:chatId/admin', async (req, res) => {
-    const { chatId } = req.params;
-    const { newAdminId } = req.body;
+router.post('/:chatId/admin/:newAdminId', async (req, res) => {
+    const { chatId, newAdminId } = req.params;
 
     if (!chatId || !newAdminId) {
         return res.status(400).send({ success: false, message: "Chat ID and new admin ID are required" });
@@ -124,6 +124,23 @@ router.get('/:chatId/participants', async (req, res) => {
         return res.status(200).send({ success: true, participants });
     } catch (error) {
         console.error("Error fetching participants:", error);
+        return res.status(500).send({ success: false, message: "Internal server error" });
+    }
+});
+
+router.put('/:chatId/rename', async (req, res) => {
+    const { chatId } = req.params;
+    const { newName } = req.body;
+
+    if (!chatId || !newName) {
+        return res.status(400).send({ success: false, message: "Chat ID and new name are required" });
+    }
+
+    try {
+        await renameChat(chatId, newName, req.userId);
+        return res.status(200).send({ success: true, message: "Chat renamed successfully" });
+    } catch (error) {
+        console.error("Error renaming chat:", error);
         return res.status(500).send({ success: false, message: "Internal server error" });
     }
 });

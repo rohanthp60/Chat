@@ -5,6 +5,8 @@ import {
     getChatById, 
     getParticipants,
     removeParticipantsFromChat, 
+    changeChatAdmin,
+    renameChat,
     addParticipantsToChat } from "../../services/chatService";
 
 import { getContacts } from "../../services/contactService";
@@ -44,14 +46,67 @@ const MenuOptions = ({options}) => {
     )
 }
 
-const ParticipantsList = ({ chatId, readOnly, submitHandler, skipHandler, complement=false }) => {
-    const { token, subscribe } = useApp();
+const ChatRenamingForm = ({ chatId, currentName, submitHandler, cancelHandler }) => {
+    const [newName, setNewName] = useState(currentName || "");
+    const { token } = useApp();
+    console.log("ChatRenamingForm rendered with chatId:", chatId, "currentName:", currentName);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!newName.trim()) {
+            toast.error("Chat name cannot be empty.");
+            return;
+        }
+        await submitHandler(token, chatId, newName.trim());
+    };
+
+    return (
+        <form className={styles.renamingForm} onSubmit={handleSubmit}>
+            {/* display old name */}
+            <div className={styles.oldName}>
+                <strong>Current Name:</strong> {currentName || "Unnamed Chat"}
+            </div>
+            {/* input for new name */}
+            <label className={styles.renameLabel} htmlFor="chat-name">New Chat Name</label>
+            <input
+                className={styles.renameInput}
+                id="chat-name"
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Enter new chat name"
+            />
+            <div className={styles.actions}>
+                <button type="submit" className={styles.button}>Rename</button>
+                <button type="button" className={`${styles.button} ${styles.buttonSecondary}`} onClick={cancelHandler}>Cancel</button>
+            </div>
+        </form>
+    );
+}
+
+const ParticipantsList = ({ 
+    chatId, 
+    readOnly, 
+    submitHandler, 
+    skipHandler, 
+    adminId, 
+    complement=false,
+    singleSelect=false}) => {
+    const { token, subscribe, userDetail } = useApp();
     const [participants, setParticipants] = useState([]);
     const [selectedParticipants, setSelectedParticipants] = useState([]);
 
     const doneHandler = readOnly ? submitHandler 
                         : async (e) => {
-                            await submitHandler(token, chatId, selectedParticipants);
+                            if (singleSelect) {
+                                if (selectedParticipants.length !== 1) {
+                                    toast.error("Please select exactly one participant.");
+                                    return;
+                                }
+                                await submitHandler(token, chatId, selectedParticipants[0]);
+                            } else {
+                                await submitHandler(token, chatId, selectedParticipants);
+                            }
                         };
     
     const participantsSetter = async () => {
@@ -92,6 +147,7 @@ const ParticipantsList = ({ chatId, readOnly, submitHandler, skipHandler, comple
             <span className={styles.contactDetails}>
                 <strong className={styles.contactUserId}>{item.userId}</strong>
                 {fullName && <span className={styles.contactName}>{fullName}</span>}
+                {item.userId === adminId && <span className={styles.contactAdmin}>Admin</span>}
             </span>
         );
     };
@@ -100,14 +156,14 @@ const ParticipantsList = ({ chatId, readOnly, submitHandler, skipHandler, comple
         <div className={styles.participantsPanel}>
             <h2>Participants</h2>
             <ItemSelector
-                items={participants.map(participant => ({
+                items={participants.filter(p => readOnly || p.userId !== userDetail?.userId).map(participant => ({
                     id: participant.userId,
                     ...participant
                 }))}
                 selectedItems={selectedParticipants}
                 setSelectedItems={setSelectedParticipants}
                 ItemComponent={ParticipantItem}
-                singleSelect={false}
+                singleSelect={singleSelect}
                 readOnly={readOnly}
             />
             <div className={styles.actions}>
@@ -129,19 +185,76 @@ const Chat = ({ chatId }) => {
     const [text, setText] = useState("");
     const { token, subscribe, sendMessage, connectionState, userDetail } = useApp();
     const [messages, setMessages] = useState([]);
-    const [menuOptions, setMenuOptions] = useState([]);
     const [menuOpen, setMenuOpen] = useState(false);
     const [viewingParticipants, setViewingParticipants] = useState(false);
     const [addingParticipants, setAddingParticipants] = useState(false);
     const [removingParticipants, setRemovingParticipants] = useState(false);
+    const [changingAdmin, setChangingAdmin] = useState(false);
+    const [renamingChat, setRenamingChat] = useState(false);
+    const [isGroupChat, setIsGroupChat] = useState(false);
+    const [adminId, setAdminId] = useState(null);
+    const [chatName, setChatName] = useState("");
+    const isAdmin = adminId === userDetail?.userId;
+    let menuOptions = [];
 
     const leaveChatHandler = async () => {
+        if (isAdmin) {
+            toast.error("Admin cannot leave the chat. Please assign a new admin before leaving.");
+            return;
+        }
         try {
             await removeParticipantsFromChat(token, chatId, [userDetail?.userId]);
             toast.success("You have left the chat.");
         } catch (error) {
             console.error("Error leaving chat:", error);
             toast.error("Error leaving chat: " + error.message);
+        }
+    }
+
+    if (isGroupChat) {
+        menuOptions = [
+            {
+                label: "Leave Chat",
+                onClick: leaveChatHandler
+            },
+            {
+                label: "View Participants",
+                onClick: () => {
+                    setMenuOpen(false);
+                    setViewingParticipants(true);
+                }
+            }
+        ];
+        if (isAdmin) {
+            menuOptions.push({
+                label: "Add Participants",
+                onClick: () => {
+                    setMenuOpen(false);
+                    setAddingParticipants(true);
+                }
+            });
+            menuOptions.push({
+                label: "Remove Participants",
+                onClick: () => {
+                    setMenuOpen(false);
+                    setRemovingParticipants(true);
+                }
+            }); 
+            menuOptions.push({
+                label: "Change Admin",
+                onClick: () => {
+                    setMenuOpen(false);
+                    setChangingAdmin(true);
+                }
+            });
+            menuOptions.push({
+                label: "Rename Chat",
+                onClick: () => {
+                    console.log("Rename Chat clicked");
+                    setMenuOpen(false);
+                    setRenamingChat(true);
+                }
+            });
         }
     }
 
@@ -162,9 +275,13 @@ const Chat = ({ chatId }) => {
             if (incomingMessage) {
                 setMessages(previous => mergeMessages(previous, [incomingMessage]));
             }
+        } else if (message.messageType === "adminChanged") {
+            setAdminId(message.data?.admin);
+        } else if (message.messageType === "chatRenamed") {
+            setChatName(message.data?.newName || "");
         }
     }), [subscribe, chatId]);
-
+    
     useEffect(() => {
         let cancelled = false;
 
@@ -176,41 +293,9 @@ const Chat = ({ chatId }) => {
                     setMessages(previous =>
                         mergeMessages(chatData.chat.conversation || [], previous)
                     );
-                    const isGroupChat = chatData.chat.groupChat || false;
-                    const isAdmin = chatData.chat.admin === userDetail?.userId;
-                    let options = [];
-                    if (isGroupChat) {
-                        options = [
-                            {
-                                label: "Leave Chat",
-                                onClick: leaveChatHandler
-                            },
-                            {
-                                label: "View Participants",
-                                onClick: () => {
-                                    setMenuOpen(false);
-                                    setViewingParticipants(true);
-                                }
-                            }
-                        ];
-                        if (isAdmin) {
-                            options.push({
-                                label: "Add Participants",
-                                onClick: () => {
-                                    setMenuOpen(false);
-                                    setAddingParticipants(true);
-                                }
-                            });
-                            options.push({
-                                label: "Remove Participants",
-                                onClick: () => {
-                                    setMenuOpen(false);
-                                    setRemovingParticipants(true);
-                                }
-                            }); 
-                        }
-                    }
-                    setMenuOptions(options);
+                    setIsGroupChat(chatData.chat.groupChat || false);
+                    setAdminId(chatData.chat.admin || null);
+                    setChatName(chatData.chat.name || "");
                 } else {
                     console.error("Failed to fetch chat:", chatData);
                 }
@@ -260,6 +345,37 @@ const Chat = ({ chatId }) => {
         }
     };
 
+    const changeAdminHandler = async (selectedToken, selectedChatId, newAdminId) => {
+        try {
+            await changeChatAdmin(selectedToken, selectedChatId, newAdminId);
+            setAdminId(newAdminId);
+            toast.success("Admin changed successfully.");
+        } catch (error) {
+            console.error("Error changing admin:", error);
+            toast.error("Error changing admin: " + error.message);
+        } finally {
+            setChangingAdmin(false);
+        }
+    };
+
+    const renameChatHandler = async (selectedToken, selectedChatId, newName) => {
+        try {
+            const response = await renameChat(selectedToken, selectedChatId, newName);
+            if (response?.success) {
+                toast.success("Chat renamed successfully.");
+            } else {
+                console.error("Failed to rename chat:", response);
+                toast.error("Failed to rename chat: " + response?.message);
+            }
+        } catch (error) {
+            console.error("Error renaming chat:", error);
+            toast.error("Error renaming chat: " + error.message);
+        } finally {
+            setRenamingChat(false);
+        }
+    }
+            
+
     const bodyRenderer = () => {
         if (viewingParticipants) {
             return (
@@ -268,6 +384,7 @@ const Chat = ({ chatId }) => {
                     readOnly={true} 
                     submitHandler={() => setViewingParticipants(false)} 
                     skipHandler={() => setViewingParticipants(false)}
+                    adminId={adminId}
                 />
             );
         }
@@ -293,10 +410,37 @@ const Chat = ({ chatId }) => {
                 />
             );
         }
+        if (changingAdmin) {
+            return (
+                <ParticipantsList 
+                    chatId={chatId} 
+                    readOnly={false} 
+                    complement={false}
+                    singleSelect={true}
+                    skipHandler={() => setChangingAdmin(false)}
+                    submitHandler={changeAdminHandler}
+                />
+            );
+        }
+        if (renamingChat) {
+            return (
+                <ChatRenamingForm
+                    chatId={chatId}
+                    currentName={chatName}
+                    submitHandler={renameChatHandler}
+                    cancelHandler={() => setRenamingChat(false)}
+                />
+            )
+        }
         return null;
     };
 
-    const menuOpenable = menuOptions.length > 0 && !viewingParticipants && !addingParticipants && !removingParticipants;
+    const menuOpenable = menuOptions.length > 0
+        && !viewingParticipants
+        && !addingParticipants
+        && !removingParticipants
+        && !changingAdmin
+        && !renamingChat;
 
     return (
         <div className={styles.panel}>
@@ -312,7 +456,7 @@ const Chat = ({ chatId }) => {
                 </button>}
                 {menuOpen && <MenuOptions options={menuOptions} />}
             </div>
-            {(viewingParticipants || addingParticipants || removingParticipants) ? (
+            {(viewingParticipants || addingParticipants || removingParticipants || changingAdmin || renamingChat) ? (
                 bodyRenderer()
             ) : (
                 <>

@@ -44,6 +44,14 @@ const ChatList = () => {
             if (selectedChatId === chatId) {
                 setSelectedChatId(null);
             }
+        } else if (message.messageType === "chatRenamed") {
+            setChats(previous => (
+                previous.map(chat => (
+                    chat.chatId === chatId
+                        ? { ...chat, name: message.data?.newName }
+                        : chat
+                ))
+            ));
         }
 
     }), [subscribe]);
