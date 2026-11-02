@@ -15,13 +15,33 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true });
 
-const port = 3000;
+const port = Number.parseInt(process.env.PORT, 10) || 3000;
+
+const allowedOrigins = process.env.CLIENT_ORIGIN
+    ? process.env.CLIENT_ORIGIN
+        .split(",")
+        .map(origin => origin.trim().replace(/\/+$/, ""))
+        .filter(Boolean)
+    : process.env.NODE_ENV !== "production"
+        ? ["http://localhost:5173"]
+        : [];
 
 app.use(cors({
-    origin: "http://localhost:5173"
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin.replace(/\/+$/, ""))) {
+            callback(null, true);
+            return;
+        }
+
+        callback(null, false);
+    }
 }));
 
 app.use(express.json());
+
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: "ok" });
+});
 
 app.use('/auth', auth);
 app.use(checkAuth);
@@ -37,7 +57,7 @@ async function start() {
         await setupWebSocketServer(wss, server);
         console.log("WebSocket server setup completed.");
         server.listen(port, () => {
-            console.log("Server listening on port 3000.");
+            console.log(`Server listening on port ${port}.`);
         });
     } catch (error) {
         console.error(error);

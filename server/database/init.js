@@ -1,18 +1,36 @@
 const { Sequelize } = require('sequelize');
+require("dotenv").config();
 
-const databaseName = 'SchoolManagementApp';
-const user = 'postgres';
-const password = 'rohan2060';
+const commonOptions = {
+    dialect: "postgres",
+    logging: false,
+    define: {
+        schema: "public",
+    },
+};
 
-const sequelize = new Sequelize(
-    databaseName,
-    user,
-    password,
-    {
-        host: "localhost",
-        dialect: "postgres",
-        logging: false
-    }
-);
+let sequelize;
+
+if (process.env.DATABASE_URL) {
+    // Neon / production
+    sequelize = new Sequelize(process.env.DATABASE_URL, {
+        ...commonOptions,
+        dialectOptions: {
+            ssl: { require: true, rejectUnauthorized: false },
+        },
+    });
+} else {
+    // Local Docker Postgres
+    sequelize = new Sequelize(
+        process.env.DB_NAME,
+        process.env.DB_USER,
+        process.env.DB_PASSWORD,
+        {
+            ...commonOptions,
+            host: process.env.DB_HOST || "localhost",
+            port: Number.parseInt(process.env.DB_PORT, 10) || 5432,
+        }
+    );
+}
 
 module.exports = sequelize;
