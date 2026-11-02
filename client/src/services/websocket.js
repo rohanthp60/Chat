@@ -131,9 +131,17 @@ export const useConnectSocket = (token) => {
         console.error("WebSocket is not open. Unable to send message.");
         return false;
     }, []);
+
+    const breakConnection = useCallback(() => {
+        if (socketRef.current) {
+            socketRef.current.close();
+            socketRef.current = null;
+        }
+    }, []);
     return {
         subscribe,
         sendMessage,
+        breakConnection,
         connectionState: token ? connectionState : "disconnected"
     };
 };

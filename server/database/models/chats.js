@@ -21,6 +21,9 @@ const orm = (Datatypes, Model, sequelize) => {
             },
             name: {
                 type: Datatypes.STRING(100),
+            },
+            admin: {
+                type: Datatypes.STRING(100),
             }
         },
         {

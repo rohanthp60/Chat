@@ -42,3 +42,69 @@ export const getChatById = async (token, chatId) => {
         console.error("Error fetching chat by ID:", error);
     }
 };
+
+export const getParticipants = async (token, chatId) => {
+    try {
+        const response = await axios.get(
+            `${apiBaseUrl}/api/chats/${chatId}/participants`,
+            authHeaders(token)
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching participants:", error);
+    }
+};
+
+export const addParticipantsToChat = async (token, chatId, participants) => {
+    try {
+        const response = await axios.post(
+            `${apiBaseUrl}/api/chats/${chatId}/participants`,
+            { participants },
+            authHeaders(token)
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Error adding participants to chat:", error);
+    }
+}
+
+export const removeParticipantsFromChat = async (token, chatId, participants) => {
+    try {
+        const response = await axios.delete(
+            `${apiBaseUrl}/api/chats/${chatId}/participants`,
+            {
+                ...authHeaders(token),
+                data: { participants }
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Error removing participants from chat:", error);
+    }
+}
+
+export const changeChatAdmin = async (token, chatId, newAdminId) => {
+    try {
+        const response = await axios.post(
+            `${apiBaseUrl}/api/chats/${chatId}/admin/${newAdminId}`,
+            {},
+            authHeaders(token)
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Error changing chat admin:", error);
+    }
+}
+
+export const renameChat = async (token, chatId, newName) => {
+    try {
+        const response = await axios.put(
+            `${apiBaseUrl}/api/chats/${chatId}/rename`,
+            { newName },
+            authHeaders(token)
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Error renaming chat:", error);
+    }
+}
