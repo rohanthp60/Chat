@@ -1,0 +1,12 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+**/node_modules
+client/dist
+client/build
+client/.vite
+*.log

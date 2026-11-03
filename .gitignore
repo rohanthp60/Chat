@@ -6,6 +6,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+!client/.env.development
 
 # Client build files
 client/dist/
