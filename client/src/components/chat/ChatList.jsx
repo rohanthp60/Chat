@@ -65,7 +65,6 @@ const ChatList = () => {
                 ))
             ));
         } else if (message.messageType === "chatUpdate") {
-            console.log("Chat update received:", message.data);
             setChats(previous =>{
                 const nextChats = previous.filter(chat => chat.chatId !== chatId);
                 let newChat = previous.find(chat => chat.chatId === chatId) || { chatId, name: message.data?.name };
