@@ -24,6 +24,9 @@ const orm = (Datatypes, Model, sequelize) => {
             },
             admin: {
                 type: Datatypes.STRING(100),
+            },
+            createdAt: {
+                type: Datatypes.DATE,
             }
         },
         {
