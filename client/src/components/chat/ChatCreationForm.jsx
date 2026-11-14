@@ -43,7 +43,6 @@ const GroupChatCreationForm = ({ setCreatingChat }) => {
         setCreateInProgress(true);
         try {
             const response = await createChat(token, {participants: selectedContacts, name: chatName, groupChat: true});
-            console.log("Create chat response:", response);
             if (!response?.success) {
                 console.error("Failed to create chat:", response);
                 toast.error("Failed to create chat: " + response?.message);

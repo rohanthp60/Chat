@@ -49,8 +49,6 @@ const MenuOptions = ({options}) => {
 const ChatRenamingForm = ({ chatId, currentName, submitHandler, cancelHandler }) => {
     const [newName, setNewName] = useState(currentName || "");
     const { token } = useApp();
-    console.log("ChatRenamingForm rendered with chatId:", chatId, "currentName:", currentName);
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!newName.trim()) {
@@ -250,7 +248,6 @@ const Chat = ({ chatId }) => {
             menuOptions.push({
                 label: "Rename Chat",
                 onClick: () => {
-                    console.log("Rename Chat clicked");
                     setMenuOpen(false);
                     setRenamingChat(true);
                 }

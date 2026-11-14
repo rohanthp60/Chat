@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useApp } from "../../contexts/appContext";
-import { getChats } from "../../services/chatService";
+import { getChats, markChatAsSeen } from "../../services/chatService";
 import Chat from "./Chat";
 import ChatListItem from "./ChatListItem";
 import styles from "./Chat.module.css";
@@ -17,7 +17,8 @@ const ChatList = () => {
                 const chatResponse = await getChats(token);
                 setChats(chatResponse.chats
                 .map(chat => ({chatId: chat.chatId, 
-                    name: chat.name, 
+                    name: chat.name,
+                    unSeen: chat.unSeen,
                     lastMessageTimestamp: new Date(chat.lastMessageTimestamp)})) || []
                 .sort((a, b) => (b.lastMessageTimestamp || 0) - (a.lastMessageTimestamp || 0)));
             } catch (error) {
@@ -27,7 +28,9 @@ const ChatList = () => {
         fetchChats();
     }, [token]);
 
-    useEffect(() => subscribe(message => {
+
+
+    useEffect(() => subscribe((message) => {
         if (message.messageType === "error") {
             toast.error(message.data?.message || "WebSocket error");
             return;
@@ -65,15 +68,46 @@ const ChatList = () => {
                 ))
             ));
         } else if (message.messageType === "chatUpdate") {
+            const isSelectedChat = selectedChatId === chatId;
+            if (isSelectedChat) {
+                markChatAsSeen(token, chatId).catch(error => {
+                    console.error("Error marking chat as seen:", error);
+                });
+            }
             setChats(previous =>{
                 const nextChats = previous.filter(chat => chat.chatId !== chatId);
                 let newChat = previous.find(chat => chat.chatId === chatId) || { chatId, name: message.data?.name };
-                newChat = { ...newChat, lastMessageTimestamp: new Date(message.data?.lastMessageTimestamp) };
-                return [newChat, ...nextChats]
+                const timestamp = message.data?.lastMessage?.timestamp
+                    || message.data?.lastMessageTimestamp
+                    || Date.now();
+                newChat = {
+                    ...newChat,
+                    lastMessageTimestamp: new Date(timestamp),
+                    unSeen: isSelectedChat ? false : message.data?.unSeen || false
+                };
+                return [newChat, ...nextChats];
             });
         }
 
-    }), [subscribe]);
+    }), [subscribe, selectedChatId, token]);
+
+    const chatListItemClickHandler = async (chatId) => {
+        setSelectedChatId(chatId);
+        const unSeenStatus = chats.find(chat => chat.chatId === chatId)?.unSeen;
+        if (!unSeenStatus) return;
+        try {
+            await markChatAsSeen(token, chatId);
+            setChats(previous => (
+                previous.map(chat => (
+                    chat.chatId === chatId
+                        ? { ...chat, unSeen: false }
+                        : chat
+                ))
+            )); 
+        } catch (error) {
+            console.error("Error marking chat as seen:", error);
+        }
+    };
 
     return (
         <div className={styles.workspace}>
@@ -85,15 +119,16 @@ const ChatList = () => {
                             key={chat.chatId}
                             chatId={chat.chatId}
                             name={chat.name}
+                            unSeen={chat.unSeen}
                             isSelected={selectedChatId === chat.chatId}
-                            onSelect={setSelectedChatId}
+                            onSelect={chatListItemClickHandler}
                         />
                     ))}
                 </ul>
             </aside>
             <section className={styles.conversation}>
                 {selectedChatId ? (
-                    <Chat key={selectedChatId} chatId={selectedChatId} />
+                    <Chat key={selectedChatId} chatId={selectedChatId} setChats={setChats} />
                 ) : (
                     <div className={styles.emptyState}>
                         <h3>Select a chat</h3>
