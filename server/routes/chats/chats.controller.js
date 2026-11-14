@@ -6,14 +6,14 @@ const  _ = require('lodash');
 
 async function getChats(userId) {
     try {
-        const chats = await Chats.findAll({ 
+        const chats = (await Chats.findAll({
             include: [{
                 model: Users,
                 where: { userId },
-                attributes: ['userId', 'firstName', 'middleName', 'lastName'],
+                attributes: [],
             }],
-            attributes: ['chatId', 'admin', 'name', 'groupChat'],
-         });
+            attributes: ['chatId', 'admin', 'name', 'groupChat', 'conversation', 'createdAt'],
+         })).map(chat => chat.toJSON());
 
         const groupChats = chats.filter(chat => chat.groupChat);
         const directChats = chats.filter(chat => !chat.groupChat);
@@ -33,14 +33,26 @@ async function getChats(userId) {
             directChatUserRelations.map(relation => [relation.chatId, relation.name])
         )
 
-        return [
+        const namedChats = [
             ...groupChats,
             ...directChats.map(chat => ({
-                ...chat.toJSON(),
+                ...chat,
                 name: directChatName[chat.chatId] || "Unnamed chat"
             }))
         ]
 
+        const getLastMessageTimestamp = chat => {
+            const conversation = chat.conversation || [];
+            if (conversation.length) {
+                return conversation[conversation.length - 1].timestamp;
+            }
+            return chat.createdAt || 0;
+        };
+
+        return namedChats.map(chat => ({
+            ...chat,
+            lastMessageTimestamp: getLastMessageTimestamp(chat)
+        }));
     } catch (error) {
         console.error("Error fetching chat:", error);
         throw error;
@@ -115,13 +127,16 @@ async function createChat(chatDetails) {
             throw new Error("Some participants do not exist");
         }
 
+
         const chatId = nanoid(8);
+        const createdAt = new Date();
         await Chats.create({
             chatId,
             conversation: [],
             name,
             groupChat,
-            admin: chatDetails.admin
+            admin: chatDetails.admin,
+            createdAt: createdAt
         });
 
         let chatUserRelationEntries = participants.map(userId => ({ chatId, userId }))
@@ -142,7 +157,9 @@ async function createChat(chatDetails) {
             messageType: 'chatCreated',
             messageId: nanoid(8),
             data: {
-                chatId
+                chatId,
+                lastMessageTimestamp: createdAt,
+                name: name,
             }
         }
         if (groupChat) {
@@ -176,11 +193,12 @@ async function updateChat(chatId, message, senderId) {
             throw new Error("User is not a member of this chat");
         }
 
+        const messageTimestamp = new Date();
         const lastMessage = {
             id: nanoid(8),
             senderId,
             message,
-            timestamp: new Date().toISOString()
+            timestamp: messageTimestamp
         };
         const updatedConversation = [
             ...(chat.conversation || []),

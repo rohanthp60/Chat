@@ -15,7 +15,11 @@ const ChatList = () => {
         const fetchChats = async () => {
             try {
                 const chatResponse = await getChats(token);
-                setChats(chatResponse.chats.map(chat => ({chatId: chat.chatId, name: chat.name})) || []);
+                setChats(chatResponse.chats
+                .map(chat => ({chatId: chat.chatId, 
+                    name: chat.name, 
+                    lastMessageTimestamp: new Date(chat.lastMessageTimestamp)})) || []
+                .sort((a, b) => (b.lastMessageTimestamp || 0) - (a.lastMessageTimestamp || 0)));
             } catch (error) {
                 console.error("Error fetching chats:", error);
             }
@@ -32,11 +36,19 @@ const ChatList = () => {
         if (!chatId) return;
 
         if (message.messageType === "chatCreated") {
-            setChats(previous => (
-                previous.some(chat => chat.chatId === chatId)
-                    ? previous
-                    : [...previous, { chatId, name: message.data?.name }]
-            ));
+            setChats(previous => {
+                const nextChat = {
+                    chatId,
+                    name: message.data?.name,
+                    lastMessageTimestamp: new Date(
+                        message.data?.lastMessageTimestamp || Date.now()
+                    )
+                };
+                return [
+                    nextChat,
+                    ...previous.filter(chat => chat.chatId !== chatId)
+                ];
+            });
         } else if (message.messageType === "chatRemoved") {
             setChats(previous => (
                 previous.filter(chat => chat.chatId !== chatId)
@@ -52,6 +64,13 @@ const ChatList = () => {
                         : chat
                 ))
             ));
+        } else if (message.messageType === "chatUpdate") {
+            setChats(previous =>{
+                const nextChats = previous.filter(chat => chat.chatId !== chatId);
+                let newChat = previous.find(chat => chat.chatId === chatId) || { chatId, name: message.data?.name };
+                newChat = { ...newChat, lastMessageTimestamp: new Date(message.data?.lastMessageTimestamp) };
+                return [newChat, ...nextChats]
+            });
         }
 
     }), [subscribe]);

@@ -264,8 +264,6 @@ const Chat = ({ chatId }) => {
             toast.error(message.data?.message || "WebSocket error");
             return;
         }
-
-        console.log("Received WebSocket message:", message);
         if (message.data?.chatId !== chatId) {
             return;
         }
