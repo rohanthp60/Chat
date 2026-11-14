@@ -2,6 +2,7 @@ const { Chats, Users, ChatUserRelation } = require('../../database');
 const { multicastToUsers, sendToUser } = require('../../websockets/controller');
 const { nanoid } = require('nanoid');
 const { Op } = require('sequelize');
+const { sequelize } = require('../../database');
 const  _ = require('lodash');
 
 async function getChats(userId) {
@@ -14,6 +15,24 @@ async function getChats(userId) {
             }],
             attributes: ['chatId', 'admin', 'name', 'groupChat', 'conversation', 'createdAt'],
          })).map(chat => chat.toJSON());
+
+        const unSeenStatuses = await ChatUserRelation.findAll({
+            where: {
+                chatId: {
+                    [Op.in]: chats.map(chat => chat.chatId),
+                },
+                userId
+            },
+            attributes: ['chatId', 'unSeen']
+        });
+
+        const unSeenMap = _.fromPairs(
+            unSeenStatuses.map(status => [status.chatId, status.unSeen])
+        );
+
+        chats.forEach(chat => {
+            chat.unSeen = unSeenMap[chat.chatId] || false;
+        });
 
         const groupChats = chats.filter(chat => chat.groupChat);
         const directChats = chats.filter(chat => !chat.groupChat);
@@ -160,6 +179,7 @@ async function createChat(chatDetails) {
                 chatId,
                 lastMessageTimestamp: createdAt,
                 name: name,
+                unSeen: true
             }
         }
         if (groupChat) {
@@ -204,17 +224,37 @@ async function updateChat(chatId, message, senderId) {
             ...(chat.conversation || []),
             lastMessage
         ];
-        await chat.update({ conversation: updatedConversation });
-
+        
         const participants = await ChatUserRelation.findAll({ where: { chatId }, attributes: ['userId'] });
-        multicastToUsers(participants.map(p => p.userId), {
+
+        await sequelize.transaction(async (t) => {
+            await chat.update({ conversation: updatedConversation }, { transaction: t });
+            await changeUnseenStatus(
+                chatId, 
+                participants.map(p => p.userId).filter(id => id !== senderId), 
+                true, t);
+        });
+
+        multicastToUsers(participants.map(p => p.userId).filter(id => id !== senderId), {
             messageType: 'chatUpdate',
             messageId: nanoid(8),
             data: {
                 chatId,
-                lastMessage
+                lastMessage,
+                unSeen: true
             }
         });
+
+        sendToUser(senderId, {
+            messageType: 'chatUpdate',
+            messageId: nanoid(8),
+            data: {
+                chatId,
+                lastMessage,
+                unSeen: false
+            }
+        });
+
         return lastMessage;
     } catch (error) {
         console.error("Error updating chat:", error);
@@ -449,6 +489,26 @@ async function renameChat(chatId, newName, userId) {
     }
 }
 
+async function changeUnseenStatus(chatId, userIds, unSeen, transaction = null) {
+    try {
+        await ChatUserRelation.update(
+            { unSeen },
+            {
+                where: {
+                    chatId,
+                    userId: {
+                        [Op.in]: userIds
+                    }
+                },
+                transaction
+            }
+        );
+    } catch (error) {
+        console.error("Error setting seen status:", error);
+        throw error;
+    }
+}
+
 module.exports = {
     getChats,
     createChat,
@@ -458,5 +518,6 @@ module.exports = {
     addParticipants,
     setAdmin,
     renameChat,
-    getParticipants
+    getParticipants,
+    changeUnseenStatus
 };

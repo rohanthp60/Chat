@@ -1,27 +1,23 @@
 import styles from "./Chat.module.css";
-import { useEffect } from "react";
 
-const ChatListItem = ({ chatId, name, isSelected, onSelect }) => {
+const ChatListItem = ({ chatId, name, isSelected, onSelect, unSeen = false }) => {
     const chatName = name?.trim() || "Unnamed chat";
-    useEffect(() => {
-        return () => {
-            onSelect(null);
-        };
-    }, [onSelect]);
-
 
     return (
         <li>
             <button
                 type="button"
-                onClick={() => onSelect(chatId)}
                 className={`${styles.chatItem} ${isSelected ? styles.chatItemActive : ""}`}
-                aria-label={`Open ${chatName}`}
+                onClick={() => onSelect(chatId)}
+                aria-label={`Open ${chatName}${unSeen ? ", unread messages" : ""}`}
             >
-                {chatName}
+                <span className={`${styles.chatName} ${unSeen ? styles.chatNameUnseen : ""}`}>
+                    {chatName}
+                </span>
+                {unSeen && <span className={styles.unseenIndicator}>New</span>}
             </button>
         </li>
     );
-};
+}
 
 export default ChatListItem;

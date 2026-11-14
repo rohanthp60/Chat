@@ -6,7 +6,8 @@ const { getChats,
         removeParticipants,
         setAdmin,
         getParticipants,
-        renameChat
+        renameChat,
+        changeUnseenStatus
      } = require('./chats.controller');
 
 router.get('/', async (req, res) => {
@@ -144,4 +145,21 @@ router.put('/:chatId/rename', async (req, res) => {
         return res.status(500).send({ success: false, message: "Internal server error" });
     }
 });
+
+router.put('/:chatId/seen', async (req, res) => {
+    const { chatId } = req.params;
+
+    if (!chatId) {
+        return res.status(400).send({ success: false, message: "Chat ID is required" });
+    }
+
+    try {
+        await changeUnseenStatus(chatId, [req.userId], false);
+        return res.status(200).send({ success: true, message: "Chat marked as seen" });
+    } catch (error) {
+        console.error("Error setting seen status:", error);
+        return res.status(500).send({ success: false, message: "Internal server error" });
+    }
+});
+
 module.exports = router;

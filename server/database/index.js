@@ -50,5 +50,6 @@ module.exports = {
     Chats,
     ChatUserRelation,
     checkDBConnection,
-    closeDatabase
+    closeDatabase,
+    sequelize
 };

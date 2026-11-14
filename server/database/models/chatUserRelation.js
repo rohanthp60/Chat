@@ -19,8 +19,9 @@ const orm = (Datatypes, Model, sequelize) => {
             name: {
                 type: Datatypes.STRING(100)
             },
-            readSince: {
-                type: Datatypes.DATE
+            unSeen: {
+                type: Datatypes.BOOLEAN,
+                defaultValue: true
             }
         },
         {

@@ -108,3 +108,16 @@ export const renameChat = async (token, chatId, newName) => {
         console.error("Error renaming chat:", error);
     }
 }
+
+export const markChatAsSeen = async (token, chatId) => {
+    try {
+        const response = await axios.put(
+            `${apiBaseUrl}/api/chats/${chatId}/seen`,
+            {},
+            authHeaders(token)
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Error marking chat as seen:", error);
+    }
+}
