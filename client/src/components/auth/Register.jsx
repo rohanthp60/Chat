@@ -66,7 +66,7 @@ const Register = () => {
             <form onSubmit={performRegister}>
                 <div className={styles.fields}>
                     <h1>Register</h1>
-                    <div style={{ display: "flex", gap: "1rem", flexDirection: "row" }}>
+                    <div className={styles.nameFields}>
                         <label htmlFor="firstName">First Name</label>
                         <input
                             className={`${styles.nameField} ${errorClass("firstName")}`}
@@ -147,8 +147,8 @@ const Register = () => {
                         onChange={inputHandler("confirmPassword")}
                     />
                     {errMessages.confirmPassword && <span className={styles.errorMessage}>{errMessages.confirmPassword}</span>}
-                    <div style={{display: 'flex', justifyContent: 'center'}}>
-                        <button type="submit" disabled={goingOn} style={{width: "30%"}}>Register</button>
+                    <div className={styles.submitButtonWrapper}>
+                        <button className={styles.submitButton} type="submit" disabled={goingOn}>Register</button>
                     </div>
                 </div>
             </form>

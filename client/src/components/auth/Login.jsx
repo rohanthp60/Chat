@@ -10,7 +10,7 @@ const Login = () => {
     const [userId, setUserId] = useState("");
     const [password, setPassword] = useState("");
     const navigate = useNavigate();
-    const { authenitcate: login, goingOn, message } = useAuthenticate();
+    const { authenitcate: login, goingOn } = useAuthenticate();
 
     const performLogin = async event => {
         event.preventDefault();
@@ -20,7 +20,7 @@ const Login = () => {
             setToken(result.token);
             navigate("/dashboard", { replace: true });
         } else {
-            toast.error(`${message || "Some error occured."} Please try again.`);
+            toast.error(`${result?.message || "Some error occured."} Please try again.`);
         }
     };
 
@@ -43,7 +43,7 @@ const Login = () => {
                         value={password}
                         onChange={event => setPassword(event.target.value)}
                     />
-                    <button type="submit" disabled={goingOn}>Login</button>
+                    <button className={styles.submitButton} type="submit" disabled={goingOn}>Login</button>
                 </div>
             </form>
             <Link className={styles.link} to="../register" replace>

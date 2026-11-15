@@ -15,10 +15,10 @@ export const createChat = async (token, chatDetails) => {
             chatDetails,
             authHeaders(token)
         );
-        console.log("Chat created:", response);
         return response.data;
     } catch (error) {
         console.error("Error creating chat:", error);
+        throw new Error(error.response?.data?.message || "Error creating chat");
     }
 };
 

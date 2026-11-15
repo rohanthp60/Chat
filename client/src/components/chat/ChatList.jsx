@@ -15,12 +15,17 @@ const ChatList = () => {
         const fetchChats = async () => {
             try {
                 const chatResponse = await getChats(token);
-                setChats(chatResponse.chats
-                .map(chat => ({chatId: chat.chatId, 
-                    name: chat.name,
-                    unSeen: chat.unSeen,
-                    lastMessageTimestamp: new Date(chat.lastMessageTimestamp)})) || []
-                .sort((a, b) => (b.lastMessageTimestamp || 0) - (a.lastMessageTimestamp || 0)));
+                const fetchedChats = (chatResponse.chats || [])
+                    .map(chat => ({
+                        chatId: chat.chatId,
+                        name: chat.name,
+                        unSeen: chat.unSeen,
+                        lastMessageTimestamp: new Date(chat.lastMessageTimestamp)
+                    }))
+                    .sort((a, b) => (
+                        (b.lastMessageTimestamp || 0) - (a.lastMessageTimestamp || 0)
+                    ));
+                setChats(fetchedChats);
             } catch (error) {
                 console.error("Error fetching chats:", error);
             }
@@ -49,7 +54,7 @@ const ChatList = () => {
                 };
                 return [
                     nextChat,
-                    ...previous.filter(chat => chat.chatId !== chatId)
+                    ...previous
                 ];
             });
         } else if (message.messageType === "chatRemoved") {
@@ -109,8 +114,10 @@ const ChatList = () => {
         }
     };
 
+    const isChatSelected = selectedChatId !== null;
+
     return (
-        <div className={styles.workspace}>
+        <div className={`${styles.workspace} ${isChatSelected ? styles.chatSelected : styles.chatListVisible}`}>
             <aside className={styles.sidebar}>
                 <h3 className={styles.sidebarTitle}>Chats</h3>
                 <ul className={styles.chatList}>
@@ -128,7 +135,12 @@ const ChatList = () => {
             </aside>
             <section className={styles.conversation}>
                 {selectedChatId ? (
-                    <Chat key={selectedChatId} chatId={selectedChatId} setChats={setChats} />
+                    <Chat
+                        key={selectedChatId}
+                        chatId={selectedChatId}
+                        setChats={setChats}
+                        onBack={() => setSelectedChatId(null)}
+                    />
                 ) : (
                     <div className={styles.emptyState}>
                         <h3>Select a chat</h3>

@@ -57,7 +57,7 @@ router.post('/', async (req, res) => {
         return res.status(201).send({ success: true, chatId });
     } catch (error) {
         console.error("Error creating chat:", error);
-        return res.status(500).send({ success: false, message: "Internal server error" });
+        return res.status(500).send({ success: false, message: error.message || "Internal server error" });
     }
 });
 
