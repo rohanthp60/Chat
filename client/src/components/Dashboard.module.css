@@ -20,8 +20,12 @@
     margin-bottom: 2rem;
 }
 
-.header h1 {
+.welcomeHeading {
     margin: 0;
+    color: #1f2937;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.25;
 }
 
 .chatCreationActions {

@@ -179,7 +179,7 @@ const ParticipantsList = ({
     )
 }
 
-const Chat = ({ chatId }) => {
+const Chat = ({ chatId, onBack }) => {
     const [text, setText] = useState("");
     const { token, subscribe, sendMessage, connectionState, userDetail } = useApp();
     const [messages, setMessages] = useState([]);
@@ -440,6 +440,15 @@ const Chat = ({ chatId }) => {
     return (
         <div className={styles.panel}>
             <div className={styles.menuWrapper}>
+                {onBack && <button
+                    type="button"
+                    className={`${styles.button} ${styles.buttonSecondary} ${styles.backButton}`}
+                    aria-label="Return to chat list"
+                    title="Return to chat list"
+                    onClick={onBack}
+                >
+                    ←
+                </button>}
                 {menuOpenable && <button
                     type="button"
                     className={styles.menuButton}

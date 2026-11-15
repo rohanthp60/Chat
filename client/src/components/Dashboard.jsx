@@ -29,7 +29,6 @@ export const Dashboard = () => {
                         <CreateGroupChatButton setCreating={setCreatingGroupChat} />
                         <NewDMButton setCreating={setCreatingDM} />
                     </div>
-                    <h2>Your Chats</h2>
                     <ChatList />
                 </>
             );
@@ -39,7 +38,7 @@ export const Dashboard = () => {
     <main className={styles.page}>
         <div className={styles.content}>
             <header className={styles.header}>
-                <h1>Welcome {userName}</h1>
+                <h1 className={styles.welcomeHeading}>Welcome, {userName}</h1>
                 <LogOutButton />
             </header>
             < Page />

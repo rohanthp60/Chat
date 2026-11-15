@@ -19,7 +19,6 @@ export function useAuthenticate(register=false) {
                 Object.entries(userDetails).filter(([, value]) => value !== "")
             );
             const response = await axios.post(`${apiBaseUrl}/auth/${register ? 'register' : 'login'}`, filteredUserDetails);
-            console.log(response);
             const data = response.data;
             setRequestPhase(prevState => ({
                 goingOn: false,
@@ -37,8 +36,8 @@ export function useAuthenticate(register=false) {
                 token: null,
                 message: error.response?.data?.message ??
                          "Error occured while processing log-in request!"
-            }));
-            return null;
+            }));;
+            return error?.response?.data;
         }
     }
 

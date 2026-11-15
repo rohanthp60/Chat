@@ -133,6 +133,7 @@ async function createChat(chatDetails) {
         });
         const userIds = usersResponse.map(u => u.userId);
 
+
         const getFullName = (firstName, middleName, lastName) => {
             let fullName = firstName + " ";
             if (middleName) {
@@ -146,6 +147,22 @@ async function createChat(chatDetails) {
             throw new Error("Some participants do not exist");
         }
 
+        if (!groupChat) {
+            const [user1, user2] = usersResponse;
+            const existingChat = await Chats.findOne({
+                include: [{
+                    model: Users,
+                    where: { userId: { [Op.in]: [user1.userId, user2.userId] } },
+                }],
+                where: {
+                    groupChat: false,
+                },
+                subQuery: false
+            });
+            if (existingChat) {
+                throw new Error("Chat already exists");
+            }
+        }
 
         const chatId = nanoid(8);
         const createdAt = new Date();

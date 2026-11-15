@@ -3,7 +3,7 @@ import styles from "./Chat.module.css";
 const CreateGroupChatButton = ({ setCreating }) => {
     return (
         <button className={styles.chatCreationButton} onClick={() => setCreating(true)}>
-                Create New Chat
+                + Group Chat
         </button>
     );
 };
@@ -11,7 +11,7 @@ const CreateGroupChatButton = ({ setCreating }) => {
 const NewDMButton = ({ setCreating }) => {
     return (
         <button className={styles.chatCreationButton} onClick={() => setCreating(true)}>
-                Create New DM
+                + Contact
         </button>
     );
 };
