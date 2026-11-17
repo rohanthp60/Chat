@@ -149,17 +149,27 @@ async function createChat(chatDetails) {
 
         if (!groupChat) {
             const [user1, user2] = usersResponse;
-            const existingChat = await Chats.findOne({
+            let existingChat = await Users.findAll({
                 include: [{
-                    model: Users,
-                    where: { userId: { [Op.in]: [user1.userId, user2.userId] } },
+                    model: Chats,
+                    where: {
+                        groupChat: false,
+                    },
+                    required: false,
+                    attributes: ['chatId']
                 }],
                 where: {
-                    groupChat: false,
+                    userId: {
+                        [Op.in]: [user1.userId, user2.userId]
+                    }
                 },
-                subQuery: false
+                attributes: ['userId']  
             });
-            if (existingChat) {
+            const user1Chats = new Set(existingChat[0].Chats?.map(chat => chat.chatId) || []);
+            const user2Anduser1Chats = existingChat[1].Chats?.map(chat => chat.chatId).filter(chatId => user1Chats.has(chatId)) || [];
+
+
+            if (user2Anduser1Chats.length > 0) {
                 throw new Error("Chat already exists");
             }
         }
