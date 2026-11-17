@@ -50,7 +50,8 @@ const ChatList = () => {
                     name: message.data?.name,
                     lastMessageTimestamp: new Date(
                         message.data?.lastMessageTimestamp || Date.now()
-                    )
+                    ),
+                    unSeen: message.data?.unSeen || false
                 };
                 return [
                     nextChat,
