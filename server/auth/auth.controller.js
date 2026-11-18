@@ -34,6 +34,15 @@ async function register(userDetails) {
     const { password } = userDetails;
     const passwordHash = await bcrypt.hash(password, saltRounds);
     try {
+        const userExists = await Users.findOne({
+            where: {
+                userId: userDetails.userId,
+            }
+        });
+
+        if (userExists) {
+            throw new Error("UserId already taken!");
+        }
         const newUser = await Users.create({
             ...userDetails,
             passwordHash: passwordHash
@@ -41,6 +50,7 @@ async function register(userDetails) {
         return newUser;
     } catch (error) {
         console.error("Error creating user:", error);
+        throw error;
     }
 }
 
