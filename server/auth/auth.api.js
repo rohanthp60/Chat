@@ -28,14 +28,15 @@ router.post("/register", async (request, response) => {
             message: "All fields should be provided."
         });
     }
-    const userDetails = await register({ userId, password, firstName, middleName, lastName, gender, dateOfBirth });
-    if (userDetails) {
+    try {
+        const userDetails = await register({ userId, password, firstName, middleName, lastName, gender, dateOfBirth });
         return response.status(200).send({ success: true, userDetails });
+    } catch (error) {
+        return response.status(500).send({ 
+            success: false, 
+            message: error.message || "An error occurred while registering the user."
+        });
     }
-    return response.status(500).send({ 
-        success: false, 
-        message: "Error occured while creating new user!"
-    });
 });
 
 
