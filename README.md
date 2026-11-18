@@ -243,7 +243,6 @@ npm run dev       # Start the server in development mode
 
 - Add message editing, deletion, replies, reactions, and attachments.
 - Add unread counts, read receipts, typing indicators, and message delivery status.
-- Order chat list by the last message recieved.
 - Add search across users, chats, and message history.
 - Add pagination or virtualized rendering for long conversations.
 - Add pagination for list of users.
